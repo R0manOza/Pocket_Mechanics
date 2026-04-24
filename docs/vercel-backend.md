@@ -45,4 +45,5 @@ After deploy:
 
 - **Session memory is not durable.** Lab 6 sessions are stored in-process (`Backend/services/session_service.py`). Serverless instances restart, so sessions can disappear.
 - **SSE streaming may be limited.** `POST /api/ai/stream` uses server-sent events. Some serverless environments buffer/timeout long-lived streams. If streaming is unreliable, deploy the backend to a long-running host (Railway/Fly/Render) instead.
+- **Filesystem is read-only.** Vercel does not allow writing `logs/*` in the repo directory. This code falls back to `/tmp` (or stdout-only if file writing fails) for `cost-log.csv` and `episode-log.csv`.
 

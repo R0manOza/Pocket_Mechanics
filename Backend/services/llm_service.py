@@ -18,7 +18,21 @@ load_dotenv()
 _openai_client: OpenAI | None = None
 _genai_configured = False
 
-LOG_FILE = os.environ.get("COST_LOG_PATH", "logs/cost-log.csv")
+def _default_log_path(filename: str) -> str:
+    """
+    Vercel serverless has a read-only filesystem except for /tmp.
+    Prefer /tmp when available; otherwise fall back to repo-relative logs/.
+    """
+    tmp = os.environ.get("TMPDIR") or os.environ.get("TEMP") or ""
+    # On Linux serverless, /tmp is the conventional writable dir.
+    if os.path.isdir("/tmp"):
+        return os.path.join("/tmp", filename)
+    if tmp and os.path.isdir(tmp):
+        return os.path.join(tmp, filename)
+    return os.path.join("logs", filename)
+
+
+LOG_FILE = os.environ.get("COST_LOG_PATH", _default_log_path("cost-log.csv"))
 
 # OpenRouter model ids (e.g. google/gemini-2.5-flash)
 DEFAULT_OPENROUTER_MODEL = os.environ.get("DEFAULT_MODEL", "google/gemini-2.5-flash")
@@ -153,20 +167,26 @@ class CallRecord:
 
 
 def _log(record: CallRecord) -> None:
-    log_dir = os.path.dirname(LOG_FILE)
-    if log_dir:
-        os.makedirs(log_dir, exist_ok=True)
-    file_exists = os.path.isfile(LOG_FILE)
-    with open(LOG_FILE, "a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(asdict(record).keys()))
-        if not file_exists:
-            writer.writeheader()
-        writer.writerow(asdict(record))
+    # Always print a summary line; file logging is best-effort.
     print(
         f"[COST] {record.timestamp} | {record.model} | {record.purpose} | "
         f"in={record.input_tokens} out={record.output_tokens} | "
         f"{record.latency_ms}ms | ${record.cost_usd:.6f}"
     )
+    try:
+        log_dir = os.path.dirname(LOG_FILE)
+        if log_dir:
+            os.makedirs(log_dir, exist_ok=True)
+        file_exists = os.path.isfile(LOG_FILE)
+        with open(LOG_FILE, "a", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=list(asdict(record).keys()))
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(asdict(record))
+    except OSError:
+        # Read-only filesystem (e.g. Vercel) or other IO failure.
+        # We keep stdout logging so the API call still succeeds.
+        return
 
 
 def _calculate_cost(pricing_key: str, in_tok: int, out_tok: int) -> float:
