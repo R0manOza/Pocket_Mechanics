@@ -166,12 +166,3 @@ git push origin main --tags
 
 ---
 
-## 6) Individual deliverable (personal repo — not this repo)
-
-Each member must commit **`mcp-reflection.md`** (200–300 words) to their **personal** repo, using the prompts in `Lab-6/templates/mcp-reflection.md`.
-
----
-
-## 7) Minimal browser client (optional)
-
-If you do not have a frontend yet, you can still validate streaming with **curl** (`-N`) or add a small page that uses `fetch()` + `ReadableStream` (pattern in `Lab-6/README.md`). When you add `Frontend/`, point CORS origins in `Backend/main.py` if your dev URL is not `localhost:3000` / `5173`.

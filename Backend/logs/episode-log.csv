@@ -8,3 +8,13 @@ session_id,event_type,episode_id,ts,model,tool_name,arguments,result_summary,inp
 1,stream_end,ep_ccd48ee91e97,2026-04-24T04:18:16.508490+00:00,gemini-2.5-flash,,,,21,43,1777004295709,1777004296508,799,False,True,0.0
 1,user_message,ep_d4eb8e9eb3a1,2026-04-24T04:18:34.423511+00:00,,,,,0,0,,,0,False,True,0.0
 1,stream_end,ep_34e8fcfdd5c7,2026-04-24T04:18:35.070177+00:00,gemini-2.5-flash,,,,73,15,1777004314426,1777004315070,644,False,True,0.0
+1,user_message,ep_d4df95e729e4,2026-04-24T05:16:53.175134+00:00,,,,,0,0,,,0,False,True,0.0
+1,stream_end,ep_b3ad75d015cc,2026-04-24T05:16:57.634872+00:00,gemini-2.5-flash,,,,35,22,1777007813185,1777007817634,4449,False,True,0.0
+12,user_message,ep_7e86225ab031,2026-04-24T05:17:22.202489+00:00,,,,,0,0,,,0,False,True,0.0
+12,stream_end,ep_af016efbe2aa,2026-04-24T05:17:22.912450+00:00,gemini-2.5-flash,,,,34,11,1777007842204,1777007842912,708,False,True,0.0
+1,user_message,ep_46b3f9fcde23,2026-04-24T05:17:40.330211+00:00,,,,,0,0,,,0,False,True,0.0
+1,stream_end,ep_4ed46504a7d2,2026-04-24T05:17:41.098896+00:00,gemini-2.5-flash,,,,67,24,1777007860332,1777007861098,766,False,True,0.0
+12,user_message,ep_514242a54674,2026-04-24T05:17:46.342232+00:00,,,,,0,0,,,0,False,True,0.0
+12,stream_end,ep_e84d87cbcde3,2026-04-24T05:17:47.159169+00:00,gemini-2.5-flash,,,,55,11,1777007866343,1777007867159,816,False,True,0.0
+1,user_message,ep_fab56b3e1622,2026-04-24T05:18:43.117293+00:00,,,,,0,0,,,0,False,True,0.0
+1,stream_end,ep_fa66fe852ce5,2026-04-24T05:18:44.167647+00:00,gemini-2.5-flash,,,,101,24,1777007923119,1777007924167,1048,False,True,0.0
