@@ -1,0 +1,5 @@
+timestamp,model,purpose,input_tokens,output_tokens,total_tokens,latency_ms,cost_usd
+2026-04-17T05:55:31.291762+00:00,gemini-2.5-flash,api_generate,27,876,903,16080,0.0
+2026-04-17T05:56:20.830317+00:00,gemini-2.5-flash,api_generate,27,849,876,11592,0.0
+2026-04-17T06:06:46.584504+00:00,gemini-2.5-flash,api_generate,32,1005,1037,17131,0.0
+2026-04-24T04:07:50.128281+00:00,gemini-2.5-flash,api_generate,27,878,905,10855,0.0

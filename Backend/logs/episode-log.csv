@@ -1,0 +1,10 @@
+session_id,event_type,episode_id,ts,model,tool_name,arguments,result_summary,input_tokens,output_tokens,stream_start_ms,stream_end_ms,latency_ms,was_cancelled,success,cost_usd
+1,user_message,ep_9ab911cdbf6a,2026-04-24T04:06:57.763335+00:00,,,,,0,0,,,0,False,True,0.0
+1,error,ep_dc1fe3a7e09f,2026-04-24T04:07:00.577893+00:00,,,,"stream_generation: 404 models/string is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.",0,0,,,0,False,False,0.0
+1,stream_end,ep_2ac81e1d0e2a,2026-04-24T04:07:00.579672+00:00,string,,,,0,0,1777003617772,1777003620579,2807,False,True,0.0
+1,user_message,ep_f9c6a1938db8,2026-04-24T04:17:53.862248+00:00,,,,,0,0,,,0,False,True,0.0
+1,stream_end,ep_1c966eb07c66,2026-04-24T04:17:57.917134+00:00,gemini-2.5-flash,,,,5,10,1777004273865,1777004277917,4052,False,True,0.0
+1,user_message,ep_6e20bbdaf786,2026-04-24T04:18:15.707645+00:00,,,,,0,0,,,0,False,True,0.0
+1,stream_end,ep_ccd48ee91e97,2026-04-24T04:18:16.508490+00:00,gemini-2.5-flash,,,,21,43,1777004295709,1777004296508,799,False,True,0.0
+1,user_message,ep_d4eb8e9eb3a1,2026-04-24T04:18:34.423511+00:00,,,,,0,0,,,0,False,True,0.0
+1,stream_end,ep_34e8fcfdd5c7,2026-04-24T04:18:35.070177+00:00,gemini-2.5-flash,,,,73,15,1777004314426,1777004315070,644,False,True,0.0
