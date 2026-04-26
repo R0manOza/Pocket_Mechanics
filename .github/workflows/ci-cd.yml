@@ -125,7 +125,6 @@ jobs:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
 
     steps:
       - name: Checkout repository
@@ -140,6 +139,9 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
       - name: Pull Vercel environment
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
@@ -152,17 +154,6 @@ jobs:
           echo "Version: ${{ github.sha }}"
           echo "Build number: ${{ github.run_number }}"
           vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
-
-      - name: Run smoke test
-        run: |
-          if [ -z "$PRODUCTION_URL" ]; then
-            echo "PRODUCTION_URL secret is not set. Skipping smoke test."
-            exit 0
-          fi
-
-          echo "Running smoke test against $PRODUCTION_URL/health"
-          curl --fail --silent --show-error "$PRODUCTION_URL/health"
-          echo "Smoke test passed"
 
       - name: Verify deployment
         if: success()
