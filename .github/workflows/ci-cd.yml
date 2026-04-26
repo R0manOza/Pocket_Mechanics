@@ -1,0 +1,204 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+
+  push:
+    branches: [main]
+
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Run Backend Tests With Coverage
+    runs-on: ubuntu-latest
+
+    env:
+      OPENROUTER_KEY: test-openrouter-key
+      GEMINI_API_KEY: test-gemini-key
+      DEFAULT_MODEL: google/gemini-2.5-flash
+      GEMINI_MODEL: gemini-2.5-flash
+      USE_DIRECT_GEMINI: "false"
+      COST_LOG_PATH: /tmp/cost-log.csv
+      EPISODE_LOG_PATH: /tmp/episode-log.csv
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install backend dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run pytest with coverage
+        run: |
+          python -m pytest tests/ -v \
+            --cov=Backend \
+            --cov=api \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=80
+
+      - name: Upload coverage report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 7
+
+  build:
+    name: Validate Build
+    runs-on: ubuntu-latest
+    needs: test
+
+    env:
+      OPENROUTER_KEY: test-openrouter-key
+      GEMINI_API_KEY: test-gemini-key
+      DEFAULT_MODEL: google/gemini-2.5-flash
+      GEMINI_MODEL: gemini-2.5-flash
+      USE_DIRECT_GEMINI: "false"
+      COST_LOG_PATH: /tmp/cost-log.csv
+      EPISODE_LOG_PATH: /tmp/episode-log.csv
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install backend dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Validate FastAPI app import
+        run: python -c "from api.index import app; print('FastAPI app imported successfully')"
+
+      - name: Validate Vercel deployment files
+        run: |
+          test -f vercel.json
+          test -f api/index.py
+          test -f requirements.txt
+          echo "Vercel deployment files are present"
+
+      - name: Create build artifact
+        run: |
+          mkdir build-artifacts
+          cp -r api build-artifacts/api
+          cp -r Backend build-artifacts/Backend
+          cp requirements.txt build-artifacts/requirements.txt
+          cp vercel.json build-artifacts/vercel.json
+          cp pytest.ini build-artifacts/pytest.ini
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build-artifacts
+          path: build-artifacts
+          retention-days: 7
+
+  deploy:
+    name: Deploy to Vercel Production
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    needs: build
+
+    environment:
+      name: production
+
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-build-artifacts
+          path: build-artifacts
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build Vercel project
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy to production
+        run: |
+          echo "Deploying Pocket Mechanics backend to production..."
+          echo "Version: ${{ github.sha }}"
+          echo "Build number: ${{ github.run_number }}"
+          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+
+      - name: Run smoke test
+        run: |
+          if [ -z "$PRODUCTION_URL" ]; then
+            echo "PRODUCTION_URL secret is not set. Skipping smoke test."
+            exit 0
+          fi
+
+          echo "Running smoke test against $PRODUCTION_URL/health"
+          curl --fail --silent --show-error "$PRODUCTION_URL/health"
+          echo "Smoke test passed"
+
+      - name: Verify deployment
+        if: success()
+        run: |
+          echo "✅ Deployment to production successful"
+          echo "Pocket Mechanics backend was deployed through Vercel"
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed"
+          echo "Rollback should be performed from the Vercel dashboard by promoting the previous successful deployment"
+
+  pipeline-status:
+    name: Pipeline Status Check
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [test, build]
+
+    steps:
+      - name: Check test job status
+        if: needs.test.result != 'success'
+        run: |
+          echo "❌ TEST JOB FAILED"
+          echo "Tests and coverage must pass before merging or deploying"
+          exit 1
+
+      - name: Check build job status
+        if: needs.build.result != 'success'
+        run: |
+          echo "❌ BUILD JOB FAILED"
+          echo "Build validation must succeed before merging or deploying"
+          exit 1
+
+      - name: Pipeline Status Success
+        if: needs.test.result == 'success' && needs.build.result == 'success'
+        run: |
+          echo "✅ All required checks passed!"
+          echo "This branch is safe to merge or deploy"
