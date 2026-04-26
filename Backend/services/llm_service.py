@@ -18,26 +18,32 @@ load_dotenv()
 _openai_client: OpenAI | None = None
 _genai_configured = False
 
+
 def _default_log_path(filename: str) -> str:
     """
     Vercel serverless has a read-only filesystem except for /tmp.
     Prefer /tmp when available; otherwise fall back to repo-relative logs/.
     """
     tmp = os.environ.get("TMPDIR") or os.environ.get("TEMP") or ""
-    # On Linux serverless, /tmp is the conventional writable dir.
+
     if os.path.isdir("/tmp"):
         return os.path.join("/tmp", filename)
     if tmp and os.path.isdir(tmp):
         return os.path.join(tmp, filename)
+
     return os.path.join("logs", filename)
 
 
-LOG_FILE = os.environ.get("COST_LOG_PATH", _default_log_path("cost-log.csv"))
+def _log_file() -> str:
+    return os.environ.get("COST_LOG_PATH", _default_log_path("cost-log.csv"))
+
 
 # OpenRouter model ids (e.g. google/gemini-2.5-flash)
 DEFAULT_OPENROUTER_MODEL = os.environ.get("DEFAULT_MODEL", "google/gemini-2.5-flash")
+
 # Google API model names (no "google/" prefix) — see AI Studio
 DEFAULT_GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+
 
 MODEL_PRICING = {
     "gemini-2.5-flash-lite": {"input": 0.00, "output": 0.00},
@@ -66,7 +72,7 @@ def _routing() -> str:
 
     Priority:
     - USE_DIRECT_GEMINI=true  -> Gemini (requires GEMINI_API_KEY)
-    - Only GEMINI_API_KEY set -> Gemini (typical for your setup)
+    - Only GEMINI_API_KEY set -> Gemini
     - Only OPENROUTER_KEY set -> OpenRouter
     - Both set -> OpenRouter unless USE_DIRECT_GEMINI=true
     """
@@ -78,21 +84,27 @@ def _routing() -> str:
         if not g_key:
             raise RuntimeError("USE_DIRECT_GEMINI=true requires GEMINI_API_KEY in Backend/.env")
         return "gemini"
+
     if or_key and g_key:
         return "openrouter"
+
     if g_key and not or_key:
         return "gemini"
+
     if or_key:
         return "openrouter"
+
     raise RuntimeError(
-        "No AI key found. Set GEMINI_API_KEY (Google AI Studio) and/or OPENROUTER_KEY in Backend/.env"
+        "No AI key found. Set GEMINI_API_KEY and/or OPENROUTER_KEY in Backend/.env"
     )
 
 
-def _ensure_genai():
+def _ensure_genai() -> None:
     global _genai_configured
+
     if _genai_configured:
         return
+
     import google.generativeai as genai
 
     genai.configure(api_key=os.environ["GEMINI_API_KEY"])
@@ -119,14 +131,17 @@ def normalize_openrouter_model(model: str | None) -> str:
 
 def _get_openrouter_client() -> OpenAI:
     global _openai_client
+
     if _openai_client is None:
         key = os.environ.get("OPENROUTER_KEY", "").strip()
         if not key:
             raise RuntimeError("OPENROUTER_KEY missing in Backend/.env")
+
         _openai_client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=key,
         )
+
     return _openai_client
 
 
@@ -134,22 +149,27 @@ def _normalize_gemini_model(model: str | None) -> str:
     """Map request override / env to a Google API model id."""
     if not model or not model.strip():
         return DEFAULT_GEMINI_MODEL
+
     m = model.strip()
+
     if "/" in m:
         # e.g. google/gemini-2.5-flash -> gemini-2.5-flash
         m = m.split("/")[-1]
+
     return m
 
 
 def _normalize_openrouter_model(model: str | None) -> str:
     if not model or not model.strip():
         return DEFAULT_OPENROUTER_MODEL
+
     return model.strip()
 
 
 def _pricing_key_for_cost(routing: str, model: str) -> str:
     if routing == "openrouter":
         return model
+
     # Gemini direct: cost table uses short names
     return model
 
@@ -173,19 +193,25 @@ def _log(record: CallRecord) -> None:
         f"in={record.input_tokens} out={record.output_tokens} | "
         f"{record.latency_ms}ms | ${record.cost_usd:.6f}"
     )
+
     try:
-        log_dir = os.path.dirname(LOG_FILE)
+        log_file = _log_file()
+        log_dir = os.path.dirname(log_file)
+
         if log_dir:
             os.makedirs(log_dir, exist_ok=True)
-        file_exists = os.path.isfile(LOG_FILE)
-        with open(LOG_FILE, "a", newline="") as f:
+
+        file_exists = os.path.isfile(log_file)
+
+        with open(log_file, "a", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(asdict(record).keys()))
             if not file_exists:
                 writer.writeheader()
             writer.writerow(asdict(record))
+
     except OSError:
-        # Read-only filesystem (e.g. Vercel) or other IO failure.
-        # We keep stdout logging so the API call still succeeds.
+        # Read-only filesystem, e.g. Vercel, or other IO failure.
+        # Keep stdout logging so the API call still succeeds.
         return
 
 
@@ -201,7 +227,7 @@ def generate(
     purpose: str = "generate",
 ) -> dict:
     routing = _routing()
-    start = time.time()
+    start = time.perf_counter()
 
     if routing == "gemini":
         _ensure_genai()
@@ -210,13 +236,16 @@ def generate(
         model_name = _normalize_gemini_model(model)
         m = genai.GenerativeModel(model_name, system_instruction=system)
         response = m.generate_content(prompt)
-        latency = int((time.time() - start) * 1000)
+
+        latency = max(1, int((time.perf_counter() - start) * 1000))
+
         meta = response.usage_metadata
         in_tok = meta.prompt_token_count if meta else 0
         out_tok = meta.candidates_token_count if meta else 0
         content = response.text or ""
         stored_model = model_name
         pricing_key = _pricing_key_for_cost(routing, model_name)
+
     else:
         client = _get_openrouter_client()
         model_name = _normalize_openrouter_model(model)
@@ -227,7 +256,9 @@ def generate(
                 {"role": "user", "content": prompt},
             ],
         )
-        latency = int((time.time() - start) * 1000)
+
+        latency = max(1, int((time.perf_counter() - start) * 1000))
+
         usage = response.usage
         in_tok = usage.prompt_tokens if usage else 0
         out_tok = usage.completion_tokens if usage else 0
@@ -246,6 +277,7 @@ def generate(
         latency_ms=latency,
         cost_usd=_calculate_cost(pricing_key, in_tok, out_tok),
     )
+
     _log(record)
 
     return {

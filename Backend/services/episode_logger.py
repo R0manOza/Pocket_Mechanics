@@ -10,16 +10,21 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
+
 def _default_log_path(filename: str) -> str:
     tmp = os.environ.get("TMPDIR") or os.environ.get("TEMP") or ""
+
     if os.path.isdir("/tmp"):
         return os.path.join("/tmp", filename)
     if tmp and os.path.isdir(tmp):
         return os.path.join(tmp, filename)
+
     return os.path.join("logs", filename)
 
 
-LOG_FILE = os.environ.get("EPISODE_LOG_PATH", _default_log_path("episode-log.csv"))
+def _log_file() -> str:
+    return os.environ.get("EPISODE_LOG_PATH", _default_log_path("episode-log.csv"))
+
 
 MODEL_PRICING: dict[str, dict[str, float]] = {
     "gemini-2.5-flash-lite": {"input": 0.00, "output": 0.00},
@@ -60,25 +65,33 @@ class Episode:
 def log_episode(ep: Episode) -> Episode:
     ep.cost_usd = _calculate_cost(ep.model or "", ep.input_tokens, ep.output_tokens)
     row = asdict(ep)
+
     label = ep.tool_name or ep.model or "-"
     print(
         f"[EPISODE] {ep.ts[:19]} | {ep.event_type:<15} | {label:<30} | "
         f"in={ep.input_tokens} out={ep.output_tokens} | {ep.latency_ms}ms | ${ep.cost_usd:.6f}"
     )
+
     try:
-        log_dir = os.path.dirname(LOG_FILE)
+        log_file = _log_file()
+        log_dir = os.path.dirname(log_file)
+
         if log_dir:
             os.makedirs(log_dir, exist_ok=True)
-        file_exists = os.path.isfile(LOG_FILE)
-        with open(LOG_FILE, "a", newline="") as f:
+
+        file_exists = os.path.isfile(log_file)
+
+        with open(log_file, "a", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(row.keys()))
             if not file_exists:
                 writer.writeheader()
             writer.writerow(row)
+
     except OSError:
-        # Read-only filesystem (e.g. Vercel) or other IO failure.
+        # Read-only filesystem, e.g. Vercel, or other IO failure.
         # Keep stdout logging so the request still succeeds.
         pass
+
     return ep
 
 
@@ -119,6 +132,7 @@ def log_tool_call(
     success: bool = True,
 ) -> Episode:
     result_str = str(result) if result is not None else ""
+
     return log_episode(
         Episode(
             session_id=session_id,
@@ -134,6 +148,7 @@ def log_tool_call(
 
 def log_error(session_id: str, error: Exception, context: str = "") -> Episode:
     msg = f"{context}: {str(error)[:190]}" if context else str(error)[:200]
+
     return log_episode(
         Episode(
             session_id=session_id,
@@ -146,4 +161,6 @@ def log_error(session_id: str, error: Exception, context: str = "") -> Episode:
 
 def _calculate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
     pricing = MODEL_PRICING.get(model, {"input": 0.0, "output": 0.0})
-    return (input_tokens / 1_000_000) * pricing["input"] + (output_tokens / 1_000_000) * pricing["output"]
+    return (input_tokens / 1_000_000) * pricing["input"] + (
+        output_tokens / 1_000_000
+    ) * pricing["output"]

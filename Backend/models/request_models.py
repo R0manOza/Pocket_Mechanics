@@ -2,7 +2,11 @@ from pydantic import BaseModel, Field
 
 
 class GenerateRequest(BaseModel):
-    prompt: str = Field(..., description="User question (text-only for Lab 5)")
+    prompt: str = Field(
+        ...,
+        min_length=1,
+        description="User question (text-only for Lab 5)",
+    )
     system: str | None = Field(
         None,
         description="Optional system prompt; defaults to a car-maintenance assistant",
