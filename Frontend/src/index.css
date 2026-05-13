@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@theme {
+  /* Typography — Inter Variable, loaded from @fontsource-variable/inter in main.tsx.
+     `font-sans` utility (and the html default) resolve to this stack.            */
+  --font-sans:
+    "Inter Variable",
+    "Inter",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+
+  /* ─── Brand palette ─────────────────────────────────────────────────
+     "British racing green" — graphite cockpit with deep motorsport green
+     for the interactive surface. Coral kept as the warning channel.
+
+     Role mapping
+       bg            → main page base (deep graphite)
+       bg-deep       → footer / deepest well
+       card          → cards, header pill, tooltips
+       card-soft     → elevated / hover card
+       glow          → very deep BRG for bottom radial halo
+       glow-soft     → slightly lighter BRG for top arc highlight
+       border        → subtle graphite dividers
+       accent        → BRG-700 — links, focus rings, buttons, user bubble
+       accent-soft   → brighter green for hover / soft tints
+       primary       → coral — reserved for warnings / retry / alerts
+       text          → body / headings (pure white)
+       text-muted    → secondary text (neutral gray)
+  ────────────────────────────────────────────────────────────────────── */
+  --color-brand-bg: #0c0c0e;
+  --color-brand-bg-deep: #050506;
+  --color-brand-card: #16171a;
+  --color-brand-card-soft: #1f2024;
+  --color-brand-glow: #14532d;
+  --color-brand-glow-soft: #166534;
+  --color-brand-border: #2a2c32;
+  --color-brand-accent: #15803d;
+  --color-brand-accent-soft: #22c55e;
+  --color-brand-primary: #ff653f;
+  --color-brand-primary-hover: #e95535;
+  --color-brand-text: #ffffff;
+  --color-brand-text-muted: #a8a8ae;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  color: var(--color-brand-text);
+  font-family: var(--font-sans);
+  /* Inter is hinted for screens; tighten optical settings to match modern UI defaults. */
+  font-feature-settings: "cv11", "ss01", "ss03";
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Layered radial gradients — deep racing-green wash bleeding up from the
+   bottom of the page over the graphite base. Reads like a motorsport
+   livery against asphalt at dusk.                                       */
+body {
+  background-color: var(--color-brand-bg);
+  background-image:
+    radial-gradient(
+      ellipse 70% 50% at 50% 100%,
+      color-mix(in srgb, var(--color-brand-glow) 55%, transparent) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 80% 40% at 50% 0%,
+      color-mix(in srgb, var(--color-brand-glow-soft) 22%, transparent) 0%,
+      transparent 55%
+    );
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* On 2xl+ screens (≥1536px / 96rem), bump the root font-size.
+   Tailwind utilities use rem under the hood (text-*, p-*, m-*, gap-*, rounded-*, w/h-*, …),
+   so this single change scales every rem-based utility ~12.5% larger at once.
+   Pixel-locked values (Logo SVG path coordinates, etc.) stay sharp. */
+@media (min-width: 96rem) {
+  :root {
+    font-size: 18px;
+  }
+}
