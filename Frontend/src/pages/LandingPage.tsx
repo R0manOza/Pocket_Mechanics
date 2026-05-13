@@ -23,7 +23,7 @@ export function LandingPage() {
         <span className="h-px w-20 bg-gradient-to-r from-transparent to-brand-accent/40 sm:w-32" />
         <span className="flex items-center gap-1.5">
           <span className="h-1 w-1 rounded-full bg-brand-accent/40" />
-          <span className="h-2 w-2 rounded-full bg-brand-accent shadow-[0_0_12px_rgba(167,139,250,0.8)]" />
+          <span className="h-2 w-2 rounded-full bg-brand-accent shadow-[0_0_12px_rgba(34,197,94,0.8)]" />
           <span className="h-1 w-1 rounded-full bg-brand-accent/40" />
         </span>
         <span className="h-px w-20 bg-gradient-to-l from-transparent to-brand-accent/40 sm:w-32" />

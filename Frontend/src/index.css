@@ -14,34 +14,36 @@
     sans-serif;
 
   /* ─── Brand palette ─────────────────────────────────────────────────
-     "Deep space" violet theme, lifted from debugium.com hero treatment.
+     "British racing green" — graphite cockpit with deep motorsport green
+     for the interactive surface. Coral kept as the warning channel.
 
      Role mapping
-       bg            → main page base (near-black with violet undertone)
+       bg            → main page base (deep graphite)
        bg-deep       → footer / deepest well
        card          → cards, header pill, tooltips
        card-soft     → elevated / hover card
-       glow          → strong violet for bottom radial halo
-       glow-soft     → soft lavender for top arc highlight
-       border        → subtle dividers on dark
-       accent        → electric violet for links, focus rings, highlights
-       accent-soft   → lighter violet for hover / soft tints
+       glow          → very deep BRG for bottom radial halo
+       glow-soft     → slightly lighter BRG for top arc highlight
+       border        → subtle graphite dividers
+       accent        → BRG-700 — links, focus rings, buttons, user bubble
+       accent-soft   → brighter green for hover / soft tints
+       primary       → coral — reserved for warnings / retry / alerts
        text          → body / headings (pure white)
-       text-muted    → secondary text (lavender-tinted gray)
+       text-muted    → secondary text (neutral gray)
   ────────────────────────────────────────────────────────────────────── */
-  --color-brand-bg: #0a0612;
-  --color-brand-bg-deep: #05030a;
-  --color-brand-card: #15102a;
-  --color-brand-card-soft: #221a3f;
-  --color-brand-glow: #4b2e80;
-  --color-brand-glow-soft: #6b49b5;
-  --color-brand-border: #2a1f40;
-  --color-brand-accent: #a78bfa;
-  --color-brand-accent-soft: #c4b5fd;
+  --color-brand-bg: #0c0c0e;
+  --color-brand-bg-deep: #050506;
+  --color-brand-card: #16171a;
+  --color-brand-card-soft: #1f2024;
+  --color-brand-glow: #14532d;
+  --color-brand-glow-soft: #166534;
+  --color-brand-border: #2a2c32;
+  --color-brand-accent: #15803d;
+  --color-brand-accent-soft: #22c55e;
   --color-brand-primary: #ff653f;
   --color-brand-primary-hover: #e95535;
   --color-brand-text: #ffffff;
-  --color-brand-text-muted: #b5b0c7;
+  --color-brand-text-muted: #a8a8ae;
 }
 
 html,
@@ -58,10 +60,9 @@ body,
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Layered radial gradients to mimic the debugium hero glow:
-   - bottom-centre violet halo (strong)
-   - top arc lavender highlight (soft)
-   - over the deep-space base colour                                       */
+/* Layered radial gradients — deep racing-green wash bleeding up from the
+   bottom of the page over the graphite base. Reads like a motorsport
+   livery against asphalt at dusk.                                       */
 body {
   background-color: var(--color-brand-bg);
   background-image:

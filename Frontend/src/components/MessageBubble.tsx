@@ -15,7 +15,7 @@ export function MessageBubble({ role, content, streaming = false, imageUrl }: Pr
         className={`max-w-[80%] overflow-hidden rounded-2xl text-sm leading-relaxed shadow-sm ${
           isUser
             // User: violet-accent pill — clearly "from you"
-            ? "bg-brand-accent text-brand-bg font-medium"
+            ? "bg-brand-accent text-white font-medium"
             // Assistant: dark card with a soft glow border — fits the page glow theme
             : "border border-brand-border bg-brand-card text-brand-text"
         }`}

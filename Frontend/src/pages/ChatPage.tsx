@@ -105,7 +105,7 @@ export function ChatPage() {
           <div className="flex-1 overflow-y-auto p-2">
             <div className="rounded-lg bg-gradient-to-br from-brand-card-soft via-brand-card-soft to-brand-glow/30 px-2.5 py-2 2xl:px-3 2xl:py-2.5 shadow-inner">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-brand-accent shadow-[0_0_8px_rgba(167,139,250,0.7)]" />
+                <span className="h-2 w-2 rounded-full bg-brand-accent shadow-[0_0_8px_rgba(34,197,94,0.7)]" />
                 <p className="text-sm font-medium text-brand-text">Active chat</p>
               </div>
               {sessionId && (
