@@ -48,10 +48,10 @@ export function ImageUploader({ onPick, disabled }: Props) {
         }}
         className={`flex h-44 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed text-sm transition ${
           disabled
-            ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
+            ? "cursor-not-allowed border-brand-border bg-brand-card/30 text-brand-text-muted/50"
             : dragOver
-              ? "border-slate-900 bg-slate-100 text-slate-800"
-              : "border-slate-300 bg-white text-slate-600 hover:border-slate-500 hover:text-slate-800"
+              ? "border-brand-accent bg-brand-card-soft text-brand-text hover:cursor-pointer"
+              : "border-brand-border bg-brand-card/40 backdrop-blur text-brand-text-muted hover:cursor-pointer hover:border-brand-accent hover:text-brand-text"
         }`}
       >
         <span className="text-base font-medium">Drop an engine-bay photo</span>
@@ -69,7 +69,7 @@ export function ImageUploader({ onPick, disabled }: Props) {
         }}
       />
       {pickerError && (
-        <p className="text-xs text-amber-700">{pickerError}</p>
+        <p className="text-xs text-brand-primary">{pickerError}</p>
       )}
     </div>
   )

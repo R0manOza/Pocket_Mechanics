@@ -39,11 +39,16 @@ export async function generate(
 }
 
 // SSE streaming via fetch + ReadableStream — EventSource cannot POST bodies.
+// `image` is accepted but currently ignored at the network layer because
+// /api/ai/stream is text-only. When the backend gains a multimodal endpoint,
+// swap to multipart/form-data here — the call sites are already passing the File.
 export async function* streamChat(args: {
   message: string
   sessionId: string
+  image?: File
   signal?: AbortSignal
 }): AsyncGenerator<StreamEvent, void, void> {
+  void args.image
   const r = await fetch(`${API_BASE_URL}/api/ai/stream`, {
     method: "POST",
     headers: authHeaders(),

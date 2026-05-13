@@ -3,6 +3,9 @@ export type ChatRole = "user" | "assistant"
 export interface ChatMessage {
   role: ChatRole
   content: string
+  // Object URL for an image attached to a user message. Created in ChatPage
+  // and held until the page unmounts or history is cleared (small accepted leak).
+  imageUrl?: string
 }
 
 // Mirrors Backend/models/request_models.py::GenerateResponse

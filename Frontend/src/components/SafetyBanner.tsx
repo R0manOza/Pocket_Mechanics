@@ -14,7 +14,7 @@ const COPY: Record<NonNullable<Props["variant"]>, string> = {
 
 export function SafetyBanner({ variant = "low_confidence", children }: Props) {
   return (
-    <div className="rounded-xl border-l-4 border-amber-400 bg-amber-50 px-4 py-3 text-sm leading-snug text-amber-900">
+    <div className="rounded-xl border-l-4 border-brand-accent bg-brand-card/60 backdrop-blur px-4 py-3 text-sm leading-snug text-brand-text">
       {children ?? COPY[variant]}
     </div>
   )

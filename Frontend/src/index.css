@@ -1,11 +1,90 @@
 @import "tailwindcss";
 
+@theme {
+  /* Typography — Inter Variable, loaded from @fontsource-variable/inter in main.tsx.
+     `font-sans` utility (and the html default) resolve to this stack.            */
+  --font-sans:
+    "Inter Variable",
+    "Inter",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+
+  /* ─── Brand palette ─────────────────────────────────────────────────
+     "Deep space" violet theme, lifted from debugium.com hero treatment.
+
+     Role mapping
+       bg            → main page base (near-black with violet undertone)
+       bg-deep       → footer / deepest well
+       card          → cards, header pill, tooltips
+       card-soft     → elevated / hover card
+       glow          → strong violet for bottom radial halo
+       glow-soft     → soft lavender for top arc highlight
+       border        → subtle dividers on dark
+       accent        → electric violet for links, focus rings, highlights
+       accent-soft   → lighter violet for hover / soft tints
+       text          → body / headings (pure white)
+       text-muted    → secondary text (lavender-tinted gray)
+  ────────────────────────────────────────────────────────────────────── */
+  --color-brand-bg: #0a0612;
+  --color-brand-bg-deep: #05030a;
+  --color-brand-card: #15102a;
+  --color-brand-card-soft: #221a3f;
+  --color-brand-glow: #4b2e80;
+  --color-brand-glow-soft: #6b49b5;
+  --color-brand-border: #2a1f40;
+  --color-brand-accent: #a78bfa;
+  --color-brand-accent-soft: #c4b5fd;
+  --color-brand-primary: #ff653f;
+  --color-brand-primary-hover: #e95535;
+  --color-brand-text: #ffffff;
+  --color-brand-text-muted: #b5b0c7;
+}
+
 html,
 body,
 #root {
   height: 100%;
   margin: 0;
-  background-color: #fafafa;
-  color: #111827;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--color-brand-text);
+  font-family: var(--font-sans);
+  /* Inter is hinted for screens; tighten optical settings to match modern UI defaults. */
+  font-feature-settings: "cv11", "ss01", "ss03";
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Layered radial gradients to mimic the debugium hero glow:
+   - bottom-centre violet halo (strong)
+   - top arc lavender highlight (soft)
+   - over the deep-space base colour                                       */
+body {
+  background-color: var(--color-brand-bg);
+  background-image:
+    radial-gradient(
+      ellipse 70% 50% at 50% 100%,
+      color-mix(in srgb, var(--color-brand-glow) 55%, transparent) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 80% 40% at 50% 0%,
+      color-mix(in srgb, var(--color-brand-glow-soft) 22%, transparent) 0%,
+      transparent 55%
+    );
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* On 2xl+ screens (≥1536px / 96rem), bump the root font-size.
+   Tailwind utilities use rem under the hood (text-*, p-*, m-*, gap-*, rounded-*, w/h-*, …),
+   so this single change scales every rem-based utility ~12.5% larger at once.
+   Pixel-locked values (Logo SVG path coordinates, etc.) stay sharp. */
+@media (min-width: 96rem) {
+  :root {
+    font-size: 18px;
+  }
 }

@@ -12,7 +12,7 @@ type State = {
 }
 
 type Action =
-  | { type: "begin"; user: string }
+  | { type: "begin"; user: string; imageUrl?: string }
   | { type: "token"; token: string }
   | { type: "commit_assistant" }
   | { type: "stream_error"; error: ChatError }
@@ -36,7 +36,10 @@ function reducer(state: State, action: Action): State {
         pendingAssistant: "",
         error: null,
         lastUserMessage: action.user,
-        history: [...state.history, { role: "user", content: action.user }],
+        history: [
+          ...state.history,
+          { role: "user", content: action.user, imageUrl: action.imageUrl },
+        ],
       }
     case "token":
       return { ...state, pendingAssistant: state.pendingAssistant + action.token }
@@ -68,19 +71,28 @@ export function useStream(sessionId: string) {
   const controllerRef = useRef<AbortController | null>(null)
 
   const send = useCallback(
-    async (message: string) => {
-      if (!message.trim() || !sessionId || state.isStreaming) return
+    async (
+      message: string,
+      attachment?: { file: File; previewUrl: string },
+    ) => {
+      // Allow image-only submission too (text OR image is enough).
+      if ((!message.trim() && !attachment) || !sessionId || state.isStreaming) return
 
       controllerRef.current?.abort()
       const controller = new AbortController()
       controllerRef.current = controller
 
-      dispatch({ type: "begin", user: message })
+      dispatch({
+        type: "begin",
+        user: message,
+        imageUrl: attachment?.previewUrl,
+      })
 
       try {
         for await (const event of streamChat({
           message,
           sessionId,
+          image: attachment?.file,
           signal: controller.signal,
         })) {
           if (event.kind === "token") {

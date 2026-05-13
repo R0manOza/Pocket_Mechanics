@@ -53,10 +53,10 @@ export function AnalyzePage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 px-3 py-4 2xl:gap-4 2xl:px-4 2xl:py-6">
       <header>
-        <h1 className="text-xl font-semibold text-slate-900">Analyze a photo</h1>
-        <p className="text-xs text-slate-500">
+        <h1 className="text-xl font-semibold text-brand-text">Analyze a photo</h1>
+        <p className="text-xs text-brand-text-muted">
           Upload an engine-bay photo and ask a question about it.
         </p>
       </header>
@@ -64,14 +64,14 @@ export function AnalyzePage() {
       <ImageUploader onPick={pickFile} disabled={state === "submitting"} />
 
       {previewUrl && (
-        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
+        <div className="flex items-center gap-3 rounded-xl border border-brand-border bg-brand-card/40 backdrop-blur p-3">
           <img
             src={previewUrl}
             alt="Selected"
             className="h-20 w-28 rounded-lg object-cover"
           />
-          <div className="flex-1 text-xs text-slate-600">
-            <p className="font-medium text-slate-800">{file?.name}</p>
+          <div className="flex-1 text-xs text-brand-text-muted">
+            <p className="font-medium text-brand-text">{file?.name}</p>
             <p>
               {file && `${(file.size / 1024).toFixed(0)} KB · ${file.type}`}
             </p>
@@ -79,9 +79,25 @@ export function AnalyzePage() {
           <button
             type="button"
             onClick={clearFile}
-            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
+            aria-label="Remove attachment"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-card px-3 py-2 text-xs font-medium text-brand-text-muted transition-colors hover:cursor-pointer hover:border-brand-accent hover:bg-brand-card-soft hover:text-brand-text"
           >
             Remove
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
       )}
@@ -91,7 +107,7 @@ export function AnalyzePage() {
         onChange={(e) => setQuestion(e.target.value)}
         placeholder="What part is this and where do I put oil?"
         rows={3}
-        className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-500"
+        className="rounded-xl border border-brand-border bg-brand-card px-3.5 py-2.5 2xl:px-4 2xl:py-3 text-sm text-brand-text placeholder:text-brand-text-muted/60 outline-none transition-colors focus:border-brand-accent disabled:opacity-60"
         disabled={state === "submitting"}
       />
 
@@ -99,7 +115,7 @@ export function AnalyzePage() {
         type="button"
         onClick={onAnalyze}
         disabled={!file || !question.trim() || state === "submitting"}
-        className="self-start rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-400"
+        className="self-start rounded-xl bg-brand-accent px-5 py-2.5 2xl:px-6 2xl:py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:cursor-pointer hover:bg-brand-glow-soft disabled:cursor-not-allowed disabled:bg-brand-card-soft disabled:text-brand-text-muted disabled:shadow-none disabled:hover:bg-brand-card-soft"
       >
         {state === "submitting" ? "Analyzing…" : "Analyze"}
       </button>

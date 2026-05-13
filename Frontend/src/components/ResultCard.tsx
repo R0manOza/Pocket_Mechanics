@@ -14,7 +14,7 @@ export function ResultCard({
   safetyNote,
 }: ResultCardProps) {
   return (
-    <article className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[180px_1fr]">
+    <article className="grid grid-cols-1 gap-4 rounded-2xl border border-brand-border bg-brand-card/40 backdrop-blur p-4 shadow-sm md:grid-cols-[180px_1fr]">
       {thumbnailUrl && (
         <img
           src={thumbnailUrl}
@@ -22,20 +22,20 @@ export function ResultCard({
           className="h-44 w-full rounded-xl object-cover md:h-full"
         />
       )}
-      <div className="flex flex-col gap-3 text-sm text-slate-700">
+      <div className="flex flex-col gap-3 text-sm text-brand-text-muted">
         {identifiedPart && (
           <header>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+            <p className="text-xs uppercase tracking-wide text-brand-text-muted/60">
               Likely part
             </p>
-            <h3 className="text-lg font-semibold text-slate-900">
+            <h3 className="text-lg font-semibold text-brand-text">
               {identifiedPart}
             </h3>
           </header>
         )}
         {explanation && (
           <section>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+            <p className="text-xs uppercase tracking-wide text-brand-text-muted/60">
               What it does
             </p>
             <p>{explanation}</p>
@@ -43,7 +43,7 @@ export function ResultCard({
         )}
         {nextStep && (
           <section>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+            <p className="text-xs uppercase tracking-wide text-brand-text-muted/60">
               Next step
             </p>
             <p>{nextStep}</p>
@@ -51,10 +51,10 @@ export function ResultCard({
         )}
         {safetyNote && (
           <section>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+            <p className="text-xs uppercase tracking-wide text-brand-text-muted/60">
               Safety note
             </p>
-            <p className="text-amber-800">{safetyNote}</p>
+            <p className="text-brand-accent">{safetyNote}</p>
           </section>
         )}
       </div>
