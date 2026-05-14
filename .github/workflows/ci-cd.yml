@@ -275,7 +275,7 @@ jobs:
         id: deploy
         run: |
           set -o pipefail
-          deployment_url="$(vercel deploy --prebuilt --token="$VERCEL_TOKEN" | tail -n 1)"
+          deployment_url="$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" | tail -n 1)"
           echo "deployment_url=${deployment_url}" >> "$GITHUB_OUTPUT"
           echo "Staged frontend candidate: ${deployment_url}"
 
