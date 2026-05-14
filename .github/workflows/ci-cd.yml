@@ -258,9 +258,9 @@ jobs:
 
       - name: Prepare prebuilt output structure
         run: |
-          mkdir -p Frontend/.vercel/output/static
-          cp -r Frontend/dist/. Frontend/.vercel/output/static/
-          cat > Frontend/.vercel/output/config.json <<'EOF'
+          mkdir -p .vercel/output/static
+          cp -r Frontend/dist/. .vercel/output/static/
+          cat > .vercel/output/config.json <<'EOF'
           {
             "version": 3,
             "routes": [
