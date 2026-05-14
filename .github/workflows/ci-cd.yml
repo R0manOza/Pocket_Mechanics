@@ -229,10 +229,6 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       VERCEL_PRODUCTION_DOMAIN: ${{ secrets.VERCEL_PRODUCTION_DOMAIN }}
 
-    defaults:
-      run:
-        working-directory: Frontend
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -245,6 +241,7 @@ jobs:
           cache-dependency-path: Frontend/package-lock.json
 
       - name: Install frontend dependencies
+        working-directory: Frontend
         run: npm ci
 
       - name: Install Vercel CLI
@@ -261,9 +258,9 @@ jobs:
 
       - name: Prepare prebuilt output structure
         run: |
-          mkdir -p .vercel/output/static
-          cp -r dist/. .vercel/output/static/
-          cat > .vercel/output/config.json <<'EOF'
+          mkdir -p Frontend/.vercel/output/static
+          cp -r Frontend/dist/. Frontend/.vercel/output/static/
+          cat > Frontend/.vercel/output/config.json <<'EOF'
           {
             "version": 3,
             "routes": [
@@ -276,6 +273,7 @@ jobs:
       - name: Deploy green Vercel candidate
         id: deploy
         run: |
+          set -o pipefail
           deployment_url="$(vercel deploy --prebuilt --token="$VERCEL_TOKEN" | tail -n 1)"
           echo "deployment_url=${deployment_url}" >> "$GITHUB_OUTPUT"
           echo "Staged frontend candidate: ${deployment_url}"
