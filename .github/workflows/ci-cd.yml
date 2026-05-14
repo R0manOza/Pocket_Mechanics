@@ -253,8 +253,18 @@ jobs:
       - name: Pull Vercel production environment
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
+      - name: Sanitize Vercel build environment
+        run: |
+          if [ -f .vercel/.env.production.local ]; then
+            sed -i '/^\(PATH\|SHELL\|SH\|npm_config_script_shell\)=/d' .vercel/.env.production.local
+          fi
+
       - name: Build green Vercel deployment
-        run: vercel build --prod --token="$VERCEL_TOKEN"
+        run: |
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+          export SHELL="/bin/bash"
+          export npm_config_script_shell="/bin/bash"
+          vercel build --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy green Vercel candidate
         id: deploy
