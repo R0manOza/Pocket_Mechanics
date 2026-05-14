@@ -51,7 +51,7 @@ curl -X POST http://localhost:8000/api/ai/generate ^
 - Cost log: `logs/cost-log.csv` — timestamp, model, tokens, latency, USD
 - Tag: `lab5-checkpoint` after commit
 
-Vision / image upload comes in a later iteration; this route is **text-only**.
+**Vision:** `POST /api/ai/generate` accepts optional `images`: an array of browser-style data URLs (`data:image/jpeg;base64,...`). Same optional `images` on `POST /api/ai/stream`. Limits: `MAX_VISION_IMAGES`, `MAX_VISION_BYTES_PER_IMAGE` in `.env`.
 
 ---
 
@@ -65,6 +65,7 @@ Body JSON:
 {
   "message": "What is a cabin air filter?",
   "session_id": "use-a-stable-uuid-per-chat",
+  "images": ["optional data:image/png;base64,..."],
   "system": "optional override",
   "model": "optional model override"
 }

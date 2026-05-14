@@ -55,7 +55,7 @@ export function ImageUploader({ onPick, disabled }: Props) {
         }`}
       >
         <span className="text-base font-medium">Drop an engine-bay photo</span>
-        <span className="text-xs">or click to choose · JPG/PNG · up to 5 MB</span>
+        <span className="text-xs">or click to choose · JPG/PNG/WebP/GIF/HEIC · up to 5 MB</span>
       </button>
       <input
         ref={inputRef}

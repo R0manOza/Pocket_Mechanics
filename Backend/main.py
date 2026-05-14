@@ -10,8 +10,10 @@ from dotenv import load_dotenv
 _backend = Path(__file__).resolve().parent
 _repo = _backend.parent
 # Repo root .env first, then Backend/.env overrides (GEMINI_API_KEY, OPENROUTER_KEY, etc.).
-load_dotenv(_repo / ".env")
-load_dotenv(_backend / ".env", override=True)
+# Skip during pytest so conftest env wins over a developer's real Backend/.env (CI has no .env).
+if not os.environ.get("POCKET_MECHANICS_UNDER_TEST"):
+    load_dotenv(_repo / ".env")
+    load_dotenv(_backend / ".env", override=True)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

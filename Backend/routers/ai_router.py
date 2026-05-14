@@ -14,7 +14,7 @@ _DEFAULT_SYSTEM = (
 @router.post("/ai/generate", response_model=GenerateResponse)
 def generate(body: GenerateRequest):
     """
-    Text-only Lab 5 endpoint: prompt -> OpenRouter -> JSON + cost log row.
+    Lab 5 blocking endpoint: prompt (optional if images) -> Gemini or OpenRouter -> JSON + cost log.
     """
     try:
         result = llm_service.generate(
@@ -22,7 +22,10 @@ def generate(body: GenerateRequest):
             system=body.system or _DEFAULT_SYSTEM,
             model=body.model,
             purpose="api_generate",
+            images=body.images,
         )
         return GenerateResponse(**result)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

@@ -3,6 +3,10 @@ Shared pytest fixtures and configuration for integration tests.
 """
 
 import os
+
+# Prevent Backend/main.py and services from loading real .env over test keys (load_dotenv override=True).
+os.environ.setdefault("POCKET_MECHANICS_UNDER_TEST", "1")
+
 import sys
 import tempfile
 from pathlib import Path

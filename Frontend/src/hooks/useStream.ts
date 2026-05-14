@@ -1,5 +1,5 @@
 import { useCallback, useReducer, useRef } from "react"
-import { streamChat } from "../lib/api"
+import { fileToVisionDataUrl, streamChat } from "../lib/api"
 import type { ChatError, ChatMessage } from "../lib/types"
 
 type State = {
@@ -69,18 +69,36 @@ function reducer(state: State, action: Action): State {
 export function useStream(sessionId: string) {
   const [state, dispatch] = useReducer(reducer, initial)
   const controllerRef = useRef<AbortController | null>(null)
+  const lastStreamArgsRef = useRef<{
+    message: string
+    images?: string[]
+    previewUrl?: string
+  } | null>(null)
 
   const send = useCallback(
     async (
       message: string,
-      attachment?: { file: File; previewUrl: string },
+      attachment?: { file?: File; previewUrl?: string; images?: string[] },
     ) => {
-      // Allow image-only submission too (text OR image is enough).
-      if ((!message.trim() && !attachment) || !sessionId || state.isStreaming) return
+      const hasFile = Boolean(attachment?.file)
+      const hasPresetImages = Boolean(attachment?.images?.length)
+      if ((!message.trim() && !hasFile && !hasPresetImages) || !sessionId || state.isStreaming)
+        return
 
       controllerRef.current?.abort()
       const controller = new AbortController()
       controllerRef.current = controller
+
+      let images = attachment?.images
+      if (!images?.length && attachment?.file) {
+        images = [await fileToVisionDataUrl(attachment.file)]
+      }
+
+      lastStreamArgsRef.current = {
+        message,
+        images: images?.length ? images : undefined,
+        previewUrl: attachment?.previewUrl,
+      }
 
       dispatch({
         type: "begin",
@@ -92,7 +110,7 @@ export function useStream(sessionId: string) {
         for await (const event of streamChat({
           message,
           sessionId,
-          image: attachment?.file,
+          images,
           signal: controller.signal,
         })) {
           if (event.kind === "token") {
@@ -116,7 +134,9 @@ export function useStream(sessionId: string) {
           error: {
             reason: "network",
             message:
-              "Sorry, we couldn't get a response right now. Your conversation is saved — tap Try Again to resend your question.",
+              err instanceof Error && err.message
+                ? err.message
+                : "Sorry, we couldn't get a response right now. Your conversation is saved — tap Try Again to resend your question.",
           },
         })
       }
@@ -125,21 +145,14 @@ export function useStream(sessionId: string) {
   )
 
   const retry = useCallback(() => {
-    if (state.lastUserMessage) {
-      dispatch({ type: "reset_error" })
-      // Replay last user message — drop the trailing "user" turn first so we don't double-add it.
-      const trimmedHistory = state.history.filter(
-        (_, i) =>
-          !(i === state.history.length - 1 && state.history.at(-1)?.role === "user"),
-      )
-      void (async () => {
-        // Mutate via dispatch: we cannot easily revert, so just resend.
-        // (Backend session already persisted the user turn; backend will dedupe by appending another turn — acceptable for retry UX.)
-        await send(state.lastUserMessage!)
-        void trimmedHistory // unused; kept for clarity
-      })()
-    }
-  }, [send, state.history, state.lastUserMessage])
+    const args = lastStreamArgsRef.current
+    if (!args || state.isStreaming) return
+    dispatch({ type: "reset_error" })
+    void send(args.message, {
+      images: args.images,
+      previewUrl: args.previewUrl,
+    })
+  }, [send, state.isStreaming])
 
   const clearError = useCallback(() => dispatch({ type: "reset_error" }), [])
   const clearHistory = useCallback(() => dispatch({ type: "clear_history" }), [])

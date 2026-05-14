@@ -2,12 +2,14 @@
 Integration tests for AI router (generate endpoint).
 """
 
-import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from routers import ai_router
+TINY_PNG = (
+    "data:image/png;base64,"
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+)
 
 
 class TestGenerateEndpoint:
@@ -52,6 +54,33 @@ class TestGenerateEndpoint:
         messages = call_args[1]["messages"]
         assert messages[0]["role"] == "system"
         assert messages[0]["content"] == custom_system
+
+    def test_generate_with_image_sends_multimodal_user_content(self, app_with_mocks, mock_openrouter_client):
+        """Vision: user message is a parts list with text + image_url for OpenRouter."""
+        response = app_with_mocks.post(
+            "/api/ai/generate",
+            json={
+                "prompt": "What is this part?",
+                "images": [TINY_PNG],
+            },
+        )
+        assert response.status_code == 200
+        mock_openrouter_client.chat.completions.create.assert_called()
+        messages = mock_openrouter_client.chat.completions.create.call_args[1]["messages"]
+        user = messages[1]
+        assert user["role"] == "user"
+        assert isinstance(user["content"], list)
+        assert user["content"][0]["type"] == "text"
+        assert user["content"][1]["type"] == "image_url"
+        assert user["content"][1]["image_url"]["url"] == TINY_PNG
+
+    def test_generate_invalid_image_returns_400(self, app_with_mocks, mock_openrouter_client):
+        response = app_with_mocks.post(
+            "/api/ai/generate",
+            json={"prompt": "Hi", "images": ["not-a-valid-data-url"]},
+        )
+        assert response.status_code == 400
+        mock_openrouter_client.chat.completions.create.assert_not_called()
 
     def test_generate_with_custom_model(self, reset_llm_service, reset_session_service, temp_logs_dir):
         """Test generate with custom model override."""
