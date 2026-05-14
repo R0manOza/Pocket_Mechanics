@@ -12,7 +12,10 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv
 from openai import OpenAI
 
-load_dotenv()
+from services import vision_utils
+
+if not os.environ.get("POCKET_MECHANICS_UNDER_TEST"):
+    load_dotenv()
 
 # Lazy OpenRouter client (only created when needed)
 _openai_client: OpenAI | None = None
@@ -225,9 +228,11 @@ def generate(
     system: str = "You are a helpful assistant.",
     model: str | None = None,
     purpose: str = "generate",
+    images: list[str] | None = None,
 ) -> dict:
     routing = _routing()
     start = time.perf_counter()
+    image_urls = vision_utils.validate_image_data_urls(images)
 
     if routing == "gemini":
         _ensure_genai()
@@ -235,7 +240,12 @@ def generate(
 
         model_name = _normalize_gemini_model(model)
         m = genai.GenerativeModel(model_name, system_instruction=system)
-        response = m.generate_content(prompt)
+        user_parts = (
+            vision_utils.gemini_generate_parts(prompt, image_urls)
+            if image_urls
+            else prompt
+        )
+        response = m.generate_content(user_parts)
 
         latency = max(1, int((time.perf_counter() - start) * 1000))
 
@@ -249,11 +259,12 @@ def generate(
     else:
         client = _get_openrouter_client()
         model_name = _normalize_openrouter_model(model)
+        user_content = vision_utils.openrouter_user_content(prompt, image_urls)
         response = client.chat.completions.create(
             model=model_name,
             messages=[
                 {"role": "system", "content": system},
-                {"role": "user", "content": prompt},
+                {"role": "user", "content": user_content},
             ],
         )
 

@@ -32,26 +32,37 @@ class TestGenerateRequest:
         assert req.model == "google/gemini-2.5-flash"
 
     def test_generate_request_missing_prompt(self):
-        """Test GenerateRequest fails without prompt."""
+        """Test GenerateRequest fails without prompt or images."""
         from models.request_models import GenerateRequest
 
         with pytest.raises(ValidationError):
             GenerateRequest()
 
     def test_generate_request_empty_prompt(self):
-        """Test GenerateRequest fails with empty prompt."""
+        """Test GenerateRequest fails with empty prompt and no images."""
         from models.request_models import GenerateRequest
 
         with pytest.raises(ValidationError):
             GenerateRequest(prompt="")
-            
-    def test_generate_request_whitespace_prompt(self):
-        """Test GenerateRequest with whitespace-only prompt (allowed)."""
+
+    def test_generate_request_image_only(self):
+        """Vision: prompt may be empty when images are provided."""
         from models.request_models import GenerateRequest
 
-        # Pydantic allows whitespace strings by default
-        req = GenerateRequest(prompt="   ")
-        assert req.prompt == "   "
+        tiny = (
+            "data:image/png;base64,"
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+        )
+        req = GenerateRequest(prompt="", images=[tiny])
+        assert req.prompt == ""
+        assert len(req.images) == 1
+
+    def test_generate_request_whitespace_prompt(self):
+        """Whitespace-only prompt is treated as empty without images."""
+        from models.request_models import GenerateRequest
+
+        with pytest.raises(ValidationError):
+            GenerateRequest(prompt="   ")
 
     def test_generate_request_long_prompt(self):
         """Test GenerateRequest accepts very long prompts."""
@@ -254,7 +265,7 @@ class TestStreamRequest:
         assert req.model == "google/gemini-2.5-flash"
 
     def test_stream_request_missing_message(self):
-        """Test StreamRequest fails without message."""
+        """Test StreamRequest fails without message or images."""
         from routers.stream_router import StreamRequest
 
         with pytest.raises(ValidationError):
@@ -268,11 +279,23 @@ class TestStreamRequest:
             StreamRequest(message="Test")
 
     def test_stream_request_empty_message(self):
-        """Test StreamRequest fails with empty message."""
+        """Test StreamRequest fails with empty message and no images."""
         from routers.stream_router import StreamRequest
 
         with pytest.raises(ValidationError):
             StreamRequest(message="", session_id="session")
+
+    def test_stream_request_image_only(self):
+        """Vision: message may be empty when images are provided."""
+        from routers.stream_router import StreamRequest
+
+        tiny = (
+            "data:image/png;base64,"
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+        )
+        req = StreamRequest(message="", session_id="s1", images=[tiny])
+        assert req.message == ""
+        assert req.images == [tiny]
 
     def test_stream_request_empty_session_id(self):
         """Test StreamRequest fails with empty session_id."""
@@ -291,10 +314,10 @@ class TestStreamRequest:
         assert req.session_id == "Y"
 
     def test_stream_request_long_message(self):
-        """Test StreamRequest with very long message."""
+        """Test StreamRequest with very long messages (within API cap)."""
         from routers.stream_router import StreamRequest
 
-        long_message = "Q" * 100000
+        long_message = "Q" * 50000
         req = StreamRequest(message=long_message, session_id="session")
         assert req.message == long_message
 

@@ -267,13 +267,46 @@ class TestStreamChatEndpoint:
         assert response.status_code == 422
 
     def test_stream_with_empty_message(self, app_with_mocks):
-        """Test stream with empty message."""
+        """Test stream with empty message and no images."""
         response = app_with_mocks.post(
             "/api/ai/stream",
             json={"message": "", "session_id": "session-1"},
         )
 
         assert response.status_code == 422
+
+    def test_stream_image_only_sends_multimodal_user_message(
+        self, reset_session_service, temp_logs_dir, mock_openrouter_stream
+    ):
+        """Vision: image-only stream builds OpenAI-style multimodal user content."""
+        tiny = (
+            "data:image/png;base64,"
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+        )
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = mock_openrouter_stream
+
+        with patch("services.llm_service._get_openrouter_client", return_value=mock_client):
+            from main import app
+            from fastapi.testclient import TestClient
+            from services.session_service import load_session
+
+            client = TestClient(app)
+            response = client.post(
+                "/api/ai/stream",
+                json={"message": "", "session_id": "vision-session", "images": [tiny]},
+            )
+            assert response.status_code == 200
+            _ = response.text
+            mock_client.chat.completions.create.assert_called()
+            msgs = mock_client.chat.completions.create.call_args[1]["messages"]
+            user_msgs = [m for m in msgs if m["role"] == "user"]
+            assert user_msgs
+            assert isinstance(user_msgs[-1]["content"], list)
+            saved = load_session("vision-session")
+            user_turns = [m for m in saved if m["role"] == "user"]
+            assert user_turns
+            assert isinstance(user_turns[-1]["content"], list)
 
     def test_stream_error_handling_during_stream(
         self, reset_llm_service, reset_session_service, temp_logs_dir
