@@ -228,6 +228,7 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       VERCEL_PRODUCTION_DOMAIN: ${{ secrets.VERCEL_PRODUCTION_DOMAIN }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
     steps:
       - name: Checkout repository
@@ -280,8 +281,16 @@ jobs:
 
       - name: Verify green Vercel candidate
         run: |
-          curl --fail --silent --show-error --retry 5 --retry-delay 5 \
-            "${{ steps.deploy.outputs.deployment_url }}" > /dev/null
+          deployment_url="${{ steps.deploy.outputs.deployment_url }}"
+          curl_args=(--fail --silent --show-error --retry 5 --retry-delay 5)
+
+          if [ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]; then
+            curl_args+=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
+            curl "${curl_args[@]}" "$deployment_url" > /dev/null
+          else
+            echo "VERCEL_AUTOMATION_BYPASS_SECRET is not set; verifying protected preview with vercel inspect."
+            vercel inspect "$deployment_url" --token="$VERCEL_TOKEN" > /dev/null
+          fi
 
       - name: Promote green candidate to production alias
         run: |
@@ -297,8 +306,13 @@ jobs:
 
       - name: Verify frontend production alias
         run: |
-          curl --fail --silent --show-error --retry 5 --retry-delay 5 \
-            "https://${VERCEL_PRODUCTION_DOMAIN}" > /dev/null
+          curl_args=(--fail --silent --show-error --retry 5 --retry-delay 5)
+
+          if [ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]; then
+            curl_args+=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
+          fi
+
+          curl "${curl_args[@]}" "https://${VERCEL_PRODUCTION_DOMAIN}" > /dev/null
 
       - name: Rollback guidance
         if: failure()
