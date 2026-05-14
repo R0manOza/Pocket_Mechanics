@@ -2,6 +2,7 @@
 Pocket Mechanics API — Lab 5 text-only prototype (Gemini direct and/or OpenRouter).
 """
 
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -16,6 +17,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import ai_router, stream_router
 
+DEFAULT_CORS_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "https://pocket-mechanics.vercel.app",
+]
+
+
+def _cors_origins() -> list[str]:
+    configured = os.getenv("FRONTEND_ORIGINS", "")
+    origins = [origin.strip() for origin in configured.split(",") if origin.strip()]
+    return [*DEFAULT_CORS_ORIGINS, *origins]
+
+
 app = FastAPI(
     title="Pocket Mechanics API",
     description="Capstone API — Lab 5 blocking generate + Lab 6 SSE stream + session memory",
@@ -24,7 +38,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=_cors_origins(),
     allow_methods=["*"],
     allow_headers=["*"],
 )
