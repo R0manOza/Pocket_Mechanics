@@ -253,13 +253,28 @@ jobs:
       - name: Pull Vercel production environment
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
+      - name: Guard Vercel local shell path
+        run: |
+          if [ -f .vercel/.env.production.local ]; then
+            if grep -Eq '^(PATH|SHELL)=' .vercel/.env.production.local; then
+              echo "Removing PATH/SHELL from pulled Vercel env before local build."
+              sed -i '/^\(PATH\|SHELL\)=/d' .vercel/.env.production.local
+            fi
+          fi
+
+      - name: Download frontend build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: Frontend/dist
+
       - name: Build green Vercel deployment
         run: vercel build --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy green Vercel candidate
         id: deploy
         run: |
-          deployment_url="$(vercel deploy --prebuilt --token="$VERCEL_TOKEN" | tail -n 1)"
+          deployment_url="$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" | tail -n 1)"
           echo "deployment_url=${deployment_url}" >> "$GITHUB_OUTPUT"
           echo "Staged frontend candidate: ${deployment_url}"
 
