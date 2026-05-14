@@ -10,7 +10,7 @@ type State = {
   // Cached so "Try Again" can replay without retyping.
   lastUserMessage: string | null
 }
-
+//hello tornike
 type Action =
   | { type: "begin"; user: string; imageUrl?: string }
   | { type: "token"; token: string }
