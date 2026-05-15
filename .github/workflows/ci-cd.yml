@@ -228,6 +228,7 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       VERCEL_PRODUCTION_DOMAIN: ${{ secrets.VERCEL_PRODUCTION_DOMAIN }}
+      VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
       # Optional: if Deployment Protection is enabled, anonymous curl gets 401. Create this secret from
       # Vercel → Project → Settings → Deployment Protection → "Protection Bypass for Automation".
       VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_PROTECTION_BYPASS }}
