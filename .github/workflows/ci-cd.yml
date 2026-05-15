@@ -234,6 +234,7 @@ jobs:
     defaults:
       run:
         working-directory: Frontend
+        shell: bash
 
     steps:
       - name: Checkout repository
@@ -250,19 +251,52 @@ jobs:
         run: npm ci
 
       - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+        # Pin CLI: @latest has regressed on GitHub Actions with "spawn sh ENOENT" for some monorepo cwd combos.
+        run: npm install --global vercel@39.4.2
 
       - name: Pull Vercel production environment
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
-      - name: Guard Vercel local shell path
+      - name: Guard Vercel pulled env files (PATH/SHELL can break local spawn)
         run: |
-          if [ -f .vercel/.env.production.local ]; then
-            if grep -Eq '^(PATH|SHELL)=' .vercel/.env.production.local; then
-              echo "Removing PATH/SHELL from pulled Vercel env before local build."
-              sed -i '/^\(PATH\|SHELL\)=/d' .vercel/.env.production.local
+          shopt -s nullglob || true
+          for f in .vercel/.env*.local; do
+            [ -f "$f" ] || continue
+            if grep -Eq '^(PATH|SHELL)=' "$f"; then
+              echo "Stripping PATH/SHELL from $f"
+              sed -i '/^\(PATH\|SHELL\)=/d' "$f"
             fi
-          fi
+          done
+
+      - name: Sanitize Vercel project.json (avoid doubled root → spawn sh ENOENT)
+        run: |
+          python3 << 'PY'
+          import json
+          from pathlib import Path
+
+          p = Path(".vercel/project.json")
+          if not p.exists():
+              raise SystemExit(0)
+          data = json.loads(p.read_text())
+          changed = False
+          for key in ("settings", "projectSettings"):
+              settings = data.get(key)
+              if not isinstance(settings, dict):
+                  continue
+              rd = settings.get("rootDirectory")
+              if isinstance(rd, str) and rd.strip().rstrip("/") in (
+                  "Frontend",
+                  "./Frontend",
+                  "frontend",
+                  "./frontend",
+              ):
+                  settings.pop("rootDirectory", None)
+                  data[key] = settings
+                  changed = True
+          if changed:
+              p.write_text(json.dumps(data, indent=2) + "\n")
+              print("Removed redundant rootDirectory from .vercel/project.json (CI cwd is already Frontend/).")
+          PY
 
       - name: Require production API URL for Vite bundle
         run: |
@@ -274,11 +308,15 @@ jobs:
       # Do NOT reuse the frontend-ci artifact here: that job builds without production secrets,
       # so import.meta.env.VITE_API_BASE_URL would be baked in as localhost. Rebuild on deploy.
       - name: Build green Vercel deployment
-        run: vercel build --prod --token="$VERCEL_TOKEN"
+        run: |
+          export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
+          command -v sh
+          vercel build --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy green Vercel candidate
         id: deploy
         run: |
+          export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
           deployment_url="$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" | tail -n 1)"
           echo "deployment_url=${deployment_url}" >> "$GITHUB_OUTPUT"
           echo "Staged frontend candidate: ${deployment_url}"
@@ -295,6 +333,7 @@ jobs:
             exit 1
           fi
 
+          export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH}"
           vercel alias set \
             "${{ steps.deploy.outputs.deployment_url }}" \
             "$VERCEL_PRODUCTION_DOMAIN" \
