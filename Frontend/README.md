@@ -77,5 +77,6 @@ export default defineConfig([
 ## Pocket Mechanics — deploy notes
 
 - **`VITE_API_BASE_URL`**: set in Vercel (Production) and as GitHub Actions secret `VITE_API_BASE_URL`. Vite inlines it at build time.
+- **`VERCEL_PROTECTION_BYPASS`** (optional GitHub secret): if **Deployment Protection** is enabled, `curl` checks in CI get **401** without it. In Vercel → **Deployment Protection** → create **Protection Bypass for Automation**, copy the secret into GitHub Actions as `VERCEL_PROTECTION_BYPASS`.
 - **Node on Vercel**: set **22.x** in the Vercel project (Project → Settings → General). CI uses Node **22**; the deploy workflow can force pulled `.vercel/project.json` to **22.x** if the CLI rejects other majors from the dashboard.
 - **Render CORS**: set `FRONTEND_ORIGINS` on the backend to your Vercel URL.

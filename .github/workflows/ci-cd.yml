@@ -228,8 +228,9 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       VERCEL_PRODUCTION_DOMAIN: ${{ secrets.VERCEL_PRODUCTION_DOMAIN }}
-      # Required so Vite embeds your Render URL instead of localhost. Must match Vercel dashboard Production var.
-      VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+      # Optional: if Deployment Protection is enabled, anonymous curl gets 401. Create this secret from
+      # Vercel → Project → Settings → Deployment Protection → "Protection Bypass for Automation".
+      VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_PROTECTION_BYPASS }}
 
     defaults:
       run:
@@ -323,8 +324,16 @@ jobs:
 
       - name: Verify green Vercel candidate
         run: |
-          curl --fail --silent --show-error --retry 5 --retry-delay 5 \
-            "${{ steps.deploy.outputs.deployment_url }}" > /dev/null
+          set -euo pipefail
+          url="${{ steps.deploy.outputs.deployment_url }}"
+          if [ -z "${VERCEL_PROTECTION_BYPASS:-}" ]; then
+            echo "::notice::VERCEL_PROTECTION_BYPASS secret is unset. If Vercel Deployment Protection is on, this curl may return 401 — add the bypass secret from Vercel → Deployment Protection → Protection Bypass for Automation."
+          fi
+          curl_opts=(--fail --silent --show-error --retry 5 --retry-delay 5)
+          if [ -n "${VERCEL_PROTECTION_BYPASS:-}" ]; then
+            curl_opts+=(-H "x-vercel-protection-bypass: ${VERCEL_PROTECTION_BYPASS}")
+          fi
+          curl "${curl_opts[@]}" "$url" > /dev/null
 
       - name: Promote green candidate to production alias
         run: |
@@ -341,8 +350,13 @@ jobs:
 
       - name: Verify frontend production alias
         run: |
-          curl --fail --silent --show-error --retry 5 --retry-delay 5 \
-            "https://${VERCEL_PRODUCTION_DOMAIN}" > /dev/null
+          set -euo pipefail
+          url="https://${VERCEL_PRODUCTION_DOMAIN}"
+          curl_opts=(--fail --silent --show-error --retry 5 --retry-delay 5)
+          if [ -n "${VERCEL_PROTECTION_BYPASS:-}" ]; then
+            curl_opts+=(-H "x-vercel-protection-bypass: ${VERCEL_PROTECTION_BYPASS}")
+          fi
+          curl "${curl_opts[@]}" "$url" > /dev/null
 
       - name: Rollback guidance
         if: failure()
