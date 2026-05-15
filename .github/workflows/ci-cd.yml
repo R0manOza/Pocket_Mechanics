@@ -251,8 +251,8 @@ jobs:
         run: npm ci
 
       - name: Install Vercel CLI
-        # Pin CLI: @latest has regressed on GitHub Actions with "spawn sh ENOENT" for some monorepo cwd combos.
-        run: npm install --global vercel@39.4.2
+        # Pin minimum version required by Vercel API for deploy (see deploy step errors).
+        run: npm install --global vercel@latest 
 
       - name: Pull Vercel production environment
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"

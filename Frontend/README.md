@@ -2,7 +2,7 @@
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-CI watches this frontend directory for deployment-triggering changes and protected production Vercel prebuilt deploy checks.!
+CI watches this frontend directory for deployment-triggering changes and protected production Vercel prebuilt deploy checks.!!
 
 Currently, two official plugins are available:
 
@@ -73,3 +73,9 @@ export default defineConfig([
   },
 ])
 ```
+
+## Pocket Mechanics — deploy notes
+
+- **`VITE_API_BASE_URL`**: set in Vercel (Production) and as GitHub Actions secret `VITE_API_BASE_URL`. Vite inlines it at build time.
+- **Node on Vercel**: set **22.x** in the Vercel project (Project → Settings → General). CI uses Node **22**; the deploy workflow can force pulled `.vercel/project.json` to **22.x** if the CLI rejects other majors from the dashboard.
+- **Render CORS**: set `FRONTEND_ORIGINS` on the backend to your Vercel URL.
