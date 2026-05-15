@@ -1,6 +1,27 @@
 import type { GenerateResponse, StreamEvent } from "./types"
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"
+/**
+ * Vite inlines `VITE_*` at **build time**. If it is missing during `npm run build` /
+ * `vercel build`, production bundles would otherwise keep calling localhost forever.
+ */
+function apiBaseUrl(): string {
+  const raw = import.meta.env.VITE_API_BASE_URL
+  if (typeof raw === "string" && raw.trim() !== "") {
+    return raw.trim().replace(/\/$/, "")
+  }
+  if (import.meta.env.DEV) {
+    return "http://localhost:8000"
+  }
+  // eslint-disable-next-line no-console
+  console.error(
+    "[Pocket Mechanics] This build has no VITE_API_BASE_URL — API calls will fail. " +
+      "Set VITE_API_BASE_URL in Vercel → Project → Settings → Environment Variables (Production) and redeploy, " +
+      "and add the same value as GitHub Actions secret VITE_API_BASE_URL for deploy-frontend (see Frontend/README.md).",
+  )
+  return "http://localhost:8000"
+}
+
+const API_BASE_URL = apiBaseUrl()
 const BEARER_TOKEN = (import.meta.env.VITE_BEARER_TOKEN ?? "").trim()
 
 /** FastAPI often returns `{ "detail": "..." }` or a validation array. */

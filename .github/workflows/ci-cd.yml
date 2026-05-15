@@ -228,7 +228,12 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       VERCEL_PRODUCTION_DOMAIN: ${{ secrets.VERCEL_PRODUCTION_DOMAIN }}
-      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      # Required so Vite embeds your Render URL instead of localhost. Must match Vercel dashboard Production var.
+      VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+
+    defaults:
+      run:
+        working-directory: Frontend
 
     steps:
       - name: Checkout repository
@@ -242,7 +247,6 @@ jobs:
           cache-dependency-path: Frontend/package-lock.json
 
       - name: Install frontend dependencies
-        working-directory: Frontend
         run: npm ci
 
       - name: Install Vercel CLI
@@ -251,46 +255,38 @@ jobs:
       - name: Pull Vercel production environment
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
-      - name: Download frontend build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: Frontend/dist
-
-      - name: Prepare prebuilt output structure
+      - name: Guard Vercel local shell path
         run: |
-          mkdir -p .vercel/output/static
-          cp -r Frontend/dist/. .vercel/output/static/
-          cat > .vercel/output/config.json <<'EOF'
-          {
-            "version": 3,
-            "routes": [
-              { "handle": "filesystem" },
-              { "src": "/(.*)", "dest": "/index.html" }
-            ]
-          }
-          EOF
+          if [ -f .vercel/.env.production.local ]; then
+            if grep -Eq '^(PATH|SHELL)=' .vercel/.env.production.local; then
+              echo "Removing PATH/SHELL from pulled Vercel env before local build."
+              sed -i '/^\(PATH\|SHELL\)=/d' .vercel/.env.production.local
+            fi
+          fi
+
+      - name: Require production API URL for Vite bundle
+        run: |
+          if [ -z "${VITE_API_BASE_URL:-}" ]; then
+            echo "::error::Set GitHub repository secret VITE_API_BASE_URL to your Render API origin, e.g. https://your-service.onrender.com (no trailing slash)."
+            exit 1
+          fi
+
+      # Do NOT reuse the frontend-ci artifact here: that job builds without production secrets,
+      # so import.meta.env.VITE_API_BASE_URL would be baked in as localhost. Rebuild on deploy.
+      - name: Build green Vercel deployment
+        run: vercel build --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy green Vercel candidate
         id: deploy
         run: |
-          set -o pipefail
           deployment_url="$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" | tail -n 1)"
           echo "deployment_url=${deployment_url}" >> "$GITHUB_OUTPUT"
           echo "Staged frontend candidate: ${deployment_url}"
 
       - name: Verify green Vercel candidate
         run: |
-          deployment_url="${{ steps.deploy.outputs.deployment_url }}"
-          curl_args=(--fail --silent --show-error --retry 5 --retry-delay 5)
-
-          if [ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]; then
-            curl_args+=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
-            curl "${curl_args[@]}" "$deployment_url" > /dev/null
-          else
-            echo "VERCEL_AUTOMATION_BYPASS_SECRET is not set; verifying protected preview with vercel inspect."
-            vercel inspect "$deployment_url" --token="$VERCEL_TOKEN" > /dev/null
-          fi
+          curl --fail --silent --show-error --retry 5 --retry-delay 5 \
+            "${{ steps.deploy.outputs.deployment_url }}" > /dev/null
 
       - name: Promote green candidate to production alias
         run: |
@@ -306,13 +302,8 @@ jobs:
 
       - name: Verify frontend production alias
         run: |
-          curl_args=(--fail --silent --show-error --retry 5 --retry-delay 5)
-
-          if [ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]; then
-            curl_args+=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
-          fi
-
-          curl "${curl_args[@]}" "https://${VERCEL_PRODUCTION_DOMAIN}" > /dev/null
+          curl --fail --silent --show-error --retry 5 --retry-delay 5 \
+            "https://${VERCEL_PRODUCTION_DOMAIN}" > /dev/null
 
       - name: Rollback guidance
         if: failure()
