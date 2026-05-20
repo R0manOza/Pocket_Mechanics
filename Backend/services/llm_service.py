@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv
 from openai import OpenAI
 
+from services import episode_logger
 from services import vision_utils
 
 if not os.environ.get("POCKET_MECHANICS_UNDER_TEST"):
@@ -46,6 +47,11 @@ DEFAULT_OPENROUTER_MODEL = os.environ.get("DEFAULT_MODEL", "google/gemini-2.5-fl
 
 # Google API model names (no "google/" prefix) — see AI Studio
 DEFAULT_GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+ENABLE_PROMPT_CACHE = os.environ.get("ENABLE_PROMPT_CACHE", "true").lower() == "true"
+DEFAULT_OPENROUTER_FALLBACK_MODELS = [
+    "google/gemma-3-27b-it:free",
+    "meta-llama/llama-4-maverick:free",
+]
 
 
 MODEL_PRICING = {
@@ -143,6 +149,8 @@ def _get_openrouter_client() -> OpenAI:
         _openai_client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=key,
+            timeout=float(os.environ.get("OPENROUTER_TIMEOUT_SECONDS", "30")),
+            max_retries=int(os.environ.get("OPENROUTER_MAX_RETRIES", "2")),
         )
 
     return _openai_client
@@ -185,7 +193,10 @@ class CallRecord:
     input_tokens: int
     output_tokens: int
     total_tokens: int
+    cache_read_tokens: int
+    cache_write_tokens: int
     latency_ms: int
+    fallback_triggered: bool
     cost_usd: float
 
 
@@ -223,6 +234,74 @@ def _calculate_cost(pricing_key: str, in_tok: int, out_tok: int) -> float:
     return (in_tok / 1_000_000) * p["input"] + (out_tok / 1_000_000) * p["output"]
 
 
+def _int_attr(obj, *names: str) -> int:
+    for name in names:
+        if obj is None:
+            return 0
+        if isinstance(obj, dict):
+            value = obj.get(name)
+            if isinstance(value, int):
+                return value
+            if isinstance(value, dict):
+                for key in names:
+                    nested = value.get(key)
+                    if isinstance(nested, int):
+                        return nested
+                return 0
+            continue
+        value = getattr(obj, name, None)
+        if isinstance(value, int):
+            return value
+        if isinstance(value, dict):
+            for key in names:
+                nested = value.get(key)
+                if isinstance(nested, int):
+                    return nested
+    return 0
+
+
+def _openrouter_model_chain(model: str | None) -> list[str]:
+    model_name = _normalize_openrouter_model(model)
+    if model and not os.environ.get("OPENROUTER_ENABLE_FALLBACK_FOR_MODEL"):
+        return [model_name]
+
+    configured = [
+        item.strip()
+        for item in os.environ.get("OPENROUTER_FALLBACK_MODELS", "").split(",")
+        if item.strip()
+    ]
+    fallbacks = configured or DEFAULT_OPENROUTER_FALLBACK_MODELS
+    return [model_name] + [fallback for fallback in fallbacks if fallback != model_name]
+
+
+def _openrouter_system_content(system: str, model_name: str):
+    if ENABLE_PROMPT_CACHE and model_name.startswith("anthropic/"):
+        return [
+            {
+                "type": "text",
+                "text": system,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ]
+    return system
+
+
+def _cache_usage_from_openrouter(usage) -> tuple[int, int]:
+    details = getattr(usage, "prompt_tokens_details", None)
+    cache_read = _int_attr(
+        usage,
+        "cache_read_input_tokens",
+        "cached_tokens",
+        "cached_input_tokens",
+    ) or _int_attr(details, "cache_read_input_tokens", "cached_tokens", "cached_input_tokens")
+    cache_write = _int_attr(
+        usage,
+        "cache_creation_input_tokens",
+        "cache_write_input_tokens",
+    ) or _int_attr(details, "cache_creation_input_tokens", "cache_write_input_tokens")
+    return cache_read, cache_write
+
+
 def generate(
     prompt: str,
     system: str = "You are a helpful assistant.",
@@ -245,38 +324,69 @@ def generate(
             if image_urls
             else prompt
         )
-        response = m.generate_content(user_parts)
+        response = m.generate_content(
+            user_parts,
+            request_options={"timeout": float(os.environ.get("GEMINI_TIMEOUT_SECONDS", "30"))},
+        )
 
         latency = max(1, int((time.perf_counter() - start) * 1000))
 
         meta = response.usage_metadata
         in_tok = meta.prompt_token_count if meta else 0
         out_tok = meta.candidates_token_count if meta else 0
+        cache_read_tokens = _int_attr(meta, "cached_content_token_count")
+        cache_write_tokens = 0
         content = response.text or ""
         stored_model = model_name
         pricing_key = _pricing_key_for_cost(routing, model_name)
+        fallback_triggered = False
 
     else:
         client = _get_openrouter_client()
-        model_name = _normalize_openrouter_model(model)
         user_content = vision_utils.openrouter_user_content(prompt, image_urls)
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user_content},
-            ],
-        )
+        last_error: Exception | None = None
+        response = None
+        stored_model = ""
+        fallback_triggered = False
+
+        for attempt_index, model_name in enumerate(_openrouter_model_chain(model)):
+            try:
+                response = client.chat.completions.create(
+                    model=model_name,
+                    messages=[
+                        {"role": "system", "content": _openrouter_system_content(system, model_name)},
+                        {"role": "user", "content": user_content},
+                    ],
+                )
+                stored_model = model_name
+                fallback_triggered = attempt_index > 0
+                break
+            except Exception as exc:
+                last_error = exc
+                failed_latency = max(1, int((time.perf_counter() - start) * 1000))
+                episode_logger.log_llm_call(
+                    session_id=purpose,
+                    model=model_name,
+                    input_tokens=0,
+                    output_tokens=0,
+                    latency_ms=failed_latency,
+                    provider=episode_logger.extract_provider(model_name),
+                    fallback_triggered=attempt_index > 0,
+                    error=type(exc).__name__,
+                )
+
+        if response is None:
+            raise RuntimeError(f"All OpenRouter models failed: {type(last_error).__name__}")
 
         latency = max(1, int((time.perf_counter() - start) * 1000))
 
         usage = response.usage
         in_tok = usage.prompt_tokens if usage else 0
         out_tok = usage.completion_tokens if usage else 0
+        cache_read_tokens, cache_write_tokens = _cache_usage_from_openrouter(usage)
         msg = response.choices[0].message
         content = (msg.content or "") if msg else ""
-        stored_model = model_name
-        pricing_key = _pricing_key_for_cost(routing, model_name)
+        pricing_key = _pricing_key_for_cost(routing, stored_model)
 
     record = CallRecord(
         timestamp=datetime.now(timezone.utc).isoformat(),
@@ -285,17 +395,35 @@ def generate(
         input_tokens=in_tok,
         output_tokens=out_tok,
         total_tokens=in_tok + out_tok,
+        cache_read_tokens=cache_read_tokens,
+        cache_write_tokens=cache_write_tokens,
         latency_ms=latency,
+        fallback_triggered=fallback_triggered,
         cost_usd=_calculate_cost(pricing_key, in_tok, out_tok),
     )
 
     _log(record)
+    episode_logger.log_llm_call(
+        session_id=purpose,
+        model=stored_model,
+        input_tokens=in_tok,
+        output_tokens=out_tok,
+        cache_read_tokens=cache_read_tokens,
+        cache_write_tokens=cache_write_tokens,
+        latency_ms=latency,
+        cost_usd=record.cost_usd,
+        provider=episode_logger.extract_provider(stored_model),
+        fallback_triggered=fallback_triggered,
+    )
 
     return {
         "content": content,
         "model": stored_model,
         "input_tokens": in_tok,
         "output_tokens": out_tok,
+        "cache_read_tokens": cache_read_tokens,
+        "cache_write_tokens": cache_write_tokens,
         "latency_ms": latency,
+        "fallback_triggered": fallback_triggered,
         "cost_usd": record.cost_usd,
     }

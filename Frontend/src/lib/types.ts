@@ -14,7 +14,10 @@ export interface GenerateResponse {
   model: string
   input_tokens: number
   output_tokens: number
+  cache_read_tokens: number
+  cache_write_tokens: number
   latency_ms: number
+  fallback_triggered: boolean
   cost_usd: number
 }
 
@@ -29,6 +32,9 @@ export type StreamEvent =
         stream_start_ms: number
         stream_end_ms: number
         latency_ms: number
+        cache_read_tokens?: number
+        cache_write_tokens?: number
+        fallback_triggered?: boolean
       }
     }
   | { kind: "error"; message: string }

@@ -4,6 +4,7 @@ bye tornike
 """
 
 import csv
+import hashlib
 import json
 import os
 import uuid
@@ -51,16 +52,23 @@ class Episode:
     ts: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     model: str | None = None
     tool_name: str | None = None
+    provider: str | None = None
+    input_hash: str | None = None
+    result_status: str | None = None
     arguments: str | None = None
     result_summary: str | None = None
     input_tokens: int = 0
     output_tokens: int = 0
+    cache_read_tokens: int = 0
+    cache_write_tokens: int = 0
     stream_start_ms: int | None = None
     stream_end_ms: int | None = None
     latency_ms: int = 0
+    fallback_triggered: bool = False
     was_cancelled: bool = False
     success: bool = True
     cost_usd: float = 0.0
+    error: str | None = None
 
 
 def log_episode(ep: Episode) -> Episode:
@@ -108,18 +116,83 @@ def log_stream_end(
     stream_start_ms: int,
     stream_end_ms: int,
     was_cancelled: bool = False,
+    cache_read_tokens: int = 0,
+    cache_write_tokens: int = 0,
+    fallback_triggered: bool = False,
 ) -> Episode:
     return log_episode(
         Episode(
             session_id=session_id,
             event_type="stream_end",
             model=model,
+            provider=extract_provider(model),
             input_tokens=input_tokens,
             output_tokens=output_tokens,
+            cache_read_tokens=cache_read_tokens,
+            cache_write_tokens=cache_write_tokens,
             stream_start_ms=stream_start_ms,
             stream_end_ms=stream_end_ms,
             latency_ms=stream_end_ms - stream_start_ms,
+            fallback_triggered=fallback_triggered,
             was_cancelled=was_cancelled,
+        )
+    )
+
+
+def log_llm_call(
+    session_id: str,
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    latency_ms: int,
+    cost_usd: float = 0.0,
+    cache_read_tokens: int = 0,
+    cache_write_tokens: int = 0,
+    provider: str | None = None,
+    fallback_triggered: bool = False,
+    error: str | None = None,
+) -> Episode:
+    return log_episode(
+        Episode(
+            session_id=session_id,
+            event_type="llm_call",
+            model=model,
+            provider=provider or extract_provider(model),
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cache_read_tokens=cache_read_tokens,
+            cache_write_tokens=cache_write_tokens,
+            latency_ms=latency_ms,
+            cost_usd=cost_usd,
+            fallback_triggered=fallback_triggered,
+            success=error is None,
+            error=error,
+        )
+    )
+
+
+def log_mcp_tool_call(
+    tool_name: str,
+    input_dict: dict,
+    result_status: str,
+    latency_ms: int,
+    error: str | None = None,
+    session_id: str = "mcp",
+) -> Episode:
+    input_hash = hashlib.sha256(
+        json.dumps(input_dict, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()[:16]
+
+    return log_episode(
+        Episode(
+            session_id=session_id,
+            event_type="mcp_tool_call",
+            tool_name=tool_name,
+            input_hash=input_hash,
+            result_status=result_status,
+            latency_ms=latency_ms,
+            success=result_status == "ok",
+            error=error,
         )
     )
 
@@ -165,3 +238,15 @@ def _calculate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
     return (input_tokens / 1_000_000) * pricing["input"] + (
         output_tokens / 1_000_000
     ) * pricing["output"]
+
+
+def extract_provider(model_string: str) -> str:
+    if "/" in model_string:
+        return model_string.split("/", 1)[0]
+    if "claude" in model_string:
+        return "anthropic"
+    if "gemini" in model_string:
+        return "google"
+    if "gpt" in model_string:
+        return "openai"
+    return "unknown"

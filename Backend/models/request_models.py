@@ -49,5 +49,8 @@ class GenerateResponse(BaseModel):
     model: str
     input_tokens: int
     output_tokens: int
+    cache_read_tokens: int = 0
+    cache_write_tokens: int = 0
     latency_ms: int
+    fallback_triggered: bool = False
     cost_usd: float

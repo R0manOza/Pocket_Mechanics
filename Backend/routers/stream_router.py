@@ -74,6 +74,8 @@ async def _token_generator(session_id: str, messages: list, model_override: str 
     full_response = ""
     input_tokens = 0
     output_tokens = 0
+    cache_read_tokens = 0
+    cache_write_tokens = 0
 
     routing = llm_service.get_routing()
     model_used = (
@@ -87,7 +89,15 @@ async def _token_generator(session_id: str, messages: list, model_override: str 
             client = llm_service.get_openrouter_client()
             response = client.chat.completions.create(
                 model=model_used,
-                messages=messages,
+                messages=[
+                    {
+                        **message,
+                        "content": llm_service._openrouter_system_content(message["content"], model_used)
+                        if message.get("role") == "system" and isinstance(message.get("content"), str)
+                        else message.get("content"),
+                    }
+                    for message in messages
+                ],
                 stream=True,
                 stream_options={"include_usage": True},
             )
@@ -100,6 +110,7 @@ async def _token_generator(session_id: str, messages: list, model_override: str 
                 if chunk.usage:
                     input_tokens = chunk.usage.prompt_tokens or 0
                     output_tokens = chunk.usage.completion_tokens or 0
+                    cache_read_tokens, cache_write_tokens = llm_service._cache_usage_from_openrouter(chunk.usage)
 
         else:
             llm_service.ensure_gemini()
@@ -114,10 +125,18 @@ async def _token_generator(session_id: str, messages: list, model_override: str 
             hist, last_user_parts = _gemini_history(non_sys)
 
             if not hist:
-                stream_iter = gmodel.generate_content(last_user_parts, stream=True)
+                stream_iter = gmodel.generate_content(
+                    last_user_parts,
+                    stream=True,
+                    request_options={"timeout": float(os.environ.get("GEMINI_TIMEOUT_SECONDS", "30"))},
+                )
             else:
                 chat = gmodel.start_chat(history=hist)
-                stream_iter = chat.send_message(last_user_parts, stream=True)
+                stream_iter = chat.send_message(
+                    last_user_parts,
+                    stream=True,
+                    request_options={"timeout": float(os.environ.get("GEMINI_TIMEOUT_SECONDS", "30"))},
+                )
 
             for chunk in stream_iter:
                 t = getattr(chunk, "text", None) or ""
@@ -128,6 +147,7 @@ async def _token_generator(session_id: str, messages: list, model_override: str 
                 if um is not None:
                     input_tokens = getattr(um, "prompt_token_count", None) or input_tokens
                     output_tokens = getattr(um, "candidates_token_count", None) or output_tokens
+                    cache_read_tokens = getattr(um, "cached_content_token_count", None) or cache_read_tokens
 
     except Exception as e:
         log_error(session_id, e, context="stream_generation")
@@ -145,6 +165,9 @@ async def _token_generator(session_id: str, messages: list, model_override: str 
                         "stream_start_ms": stream_start_ms,
                         "stream_end_ms": stream_end_ms,
                         "latency_ms": stream_end_ms - stream_start_ms,
+                        "cache_read_tokens": cache_read_tokens,
+                        "cache_write_tokens": cache_write_tokens,
+                        "fallback_triggered": False,
                     }
                 }
             )
@@ -157,6 +180,9 @@ async def _token_generator(session_id: str, messages: list, model_override: str 
             output_tokens=output_tokens,
             stream_start_ms=stream_start_ms,
             stream_end_ms=stream_end_ms,
+            cache_read_tokens=cache_read_tokens,
+            cache_write_tokens=cache_write_tokens,
+            fallback_triggered=False,
         )
         if full_response:
             messages.append({"role": "assistant", "content": full_response})
