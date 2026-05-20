@@ -88,3 +88,5 @@ curl.exe -N -X POST http://127.0.0.1:8000/api/ai/stream -H "Content-Type: applic
 Episode log (streaming + timing): **`logs/episode-log.csv`** (override with `EPISODE_LOG_PATH`).
 
 Full write-up: **`docs/lab-6.md`**.
+
+Deployment smoke test note: backend README-only changes should not affect runtime behavior.
