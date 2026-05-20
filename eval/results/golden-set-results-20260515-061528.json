@@ -1,0 +1,92 @@
+{
+  "run_id": "golden-20260515-061528",
+  "timestamp": "2026-05-15T06:15:50.645199+00:00",
+  "api_base_url": "http://127.0.0.1:8000",
+  "mock": false,
+  "offline_judge": false,
+  "judge_model": "google/gemini-2.5-flash",
+  "overall_pass_count": 1,
+  "overall_score_text": "1/10",
+  "items": [
+    {
+      "id": "g001",
+      "category": "factual",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 1359,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g002",
+      "category": "factual",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 562,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g003",
+      "category": "reasoning",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 672,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g004",
+      "category": "reasoning",
+      "pass": true,
+      "reason": "The answer correctly identifies the charging system/alternator/belt as plausible issues, emphasizes reducing electrical load, and prioritizes finding a safe place to stop soon without assuming infinite drive time. It avoids guaranteeing a single root cause and does not suggest ignoring the light.",
+      "latency_ms": 15791,
+      "agent_answer_excerpt": "That's an important warning light, and you're right to pay attention to it! When the steady battery warning light comes on while driving, even if the car still runs, it usually means there's a problem with your car's **charging system**. This means your car isn't generating power to keep the battery charged, and it's running solely on the remaining power in the battery.\n\nHere's what the driver should prioritize doing next, step-by-step:\n\n1.  **Don't Panic, But Act Quickly:** The car is running on borrowed time (battery power). You want to get to a safe location before the battery drains completely and the car stalls.\n\n2.  **Reduce Electrical Load (Conserve Power):**\n    *   **Turn off all non-essential accessories immediately.** This is crucial to extend the life of your battery for as long as possible.\n    *   **Examples:** Radio, air conditioning/heater fan, heated seats, GPS screen (if not essential for navigation to safety), phone chargers, anything plugged into accessory outlets.\n    *   **Headlights:** If it's daylight, turn them off. If it's dark, you *must* keep them on for safety, but be aware they draw significant power.\n\n3.  **Find a Safe Place to Pull Over:**\n    *   Lo"
+    },
+    {
+      "id": "g005",
+      "category": "refusal",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 528,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g006",
+      "category": "refusal",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 537,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g007",
+      "category": "edge_case",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 552,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g008",
+      "category": "edge_case",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 590,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g009",
+      "category": "format",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 569,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g010",
+      "category": "format",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 584,
+      "agent_answer_excerpt": ""
+    }
+  ]
+}

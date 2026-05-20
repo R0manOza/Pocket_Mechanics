@@ -1,0 +1,92 @@
+{
+  "run_id": "golden-20260515-061750",
+  "timestamp": "2026-05-15T06:17:56.241340+00:00",
+  "api_base_url": "http://127.0.0.1:8000",
+  "mock": false,
+  "offline_judge": false,
+  "judge_model": "google/gemini-2.5-flash",
+  "overall_pass_count": 0,
+  "overall_score_text": "0/10",
+  "items": [
+    {
+      "id": "g001",
+      "category": "factual",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 703,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g002",
+      "category": "factual",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 568,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g003",
+      "category": "reasoning",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 592,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g004",
+      "category": "reasoning",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 577,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g005",
+      "category": "refusal",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 571,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g006",
+      "category": "refusal",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 555,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g007",
+      "category": "edge_case",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 592,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g008",
+      "category": "edge_case",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 578,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g009",
+      "category": "format",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 644,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g010",
+      "category": "format",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 560,
+      "agent_answer_excerpt": ""
+    }
+  ]
+}
