@@ -1,6 +1,5 @@
 """
-Episode log — Lab 6 (streaming + events for Week 11 audit).
-bye tornike
+Episode log — Lab 6 streaming + Lab 7 resilience fields (Week 11 audit).
 """
 
 import csv
@@ -69,6 +68,8 @@ class Episode:
     success: bool = True
     cost_usd: float = 0.0
     error: str | None = None
+    retry_count: int = 0
+    timeout_ms: int | None = None
 
 
 def log_episode(ep: Episode) -> Episode:
@@ -76,9 +77,12 @@ def log_episode(ep: Episode) -> Episode:
     row = asdict(ep)
 
     label = ep.tool_name or ep.model or "-"
+    retry_note = f" retries={ep.retry_count}" if ep.retry_count else ""
+    err_note = f" err={ep.error}" if ep.error else ""
     print(
         f"[EPISODE] {ep.ts[:19]} | {ep.event_type:<15} | {label:<30} | "
-        f"in={ep.input_tokens} out={ep.output_tokens} | {ep.latency_ms}ms | ${ep.cost_usd:.6f}"
+        f"in={ep.input_tokens} out={ep.output_tokens} | {ep.latency_ms}ms{retry_note}{err_note} | "
+        f"${ep.cost_usd:.6f}"
     )
 
     try:
@@ -119,6 +123,9 @@ def log_stream_end(
     cache_read_tokens: int = 0,
     cache_write_tokens: int = 0,
     fallback_triggered: bool = False,
+    retry_count: int = 0,
+    timeout_ms: int | None = None,
+    error: str | None = None,
 ) -> Episode:
     return log_episode(
         Episode(
@@ -135,6 +142,10 @@ def log_stream_end(
             latency_ms=stream_end_ms - stream_start_ms,
             fallback_triggered=fallback_triggered,
             was_cancelled=was_cancelled,
+            retry_count=retry_count,
+            timeout_ms=timeout_ms,
+            success=error is None,
+            error=error,
         )
     )
 
@@ -151,6 +162,8 @@ def log_llm_call(
     provider: str | None = None,
     fallback_triggered: bool = False,
     error: str | None = None,
+    retry_count: int = 0,
+    timeout_ms: int | None = None,
 ) -> Episode:
     return log_episode(
         Episode(
@@ -167,6 +180,8 @@ def log_llm_call(
             fallback_triggered=fallback_triggered,
             success=error is None,
             error=error,
+            retry_count=retry_count,
+            timeout_ms=timeout_ms,
         )
     )
 
@@ -220,7 +235,14 @@ def log_tool_call(
     )
 
 
-def log_error(session_id: str, error: Exception, context: str = "") -> Episode:
+def log_error(
+    session_id: str,
+    error: Exception,
+    context: str = "",
+    *,
+    retry_count: int = 0,
+    timeout_ms: int | None = None,
+) -> Episode:
     msg = f"{context}: {str(error)[:190]}" if context else str(error)[:200]
 
     return log_episode(
@@ -229,6 +251,9 @@ def log_error(session_id: str, error: Exception, context: str = "") -> Episode:
             event_type="error",
             result_summary=msg,
             success=False,
+            error=type(error).__name__,
+            retry_count=retry_count,
+            timeout_ms=timeout_ms,
         )
     )
 

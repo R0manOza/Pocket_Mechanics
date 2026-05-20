@@ -34,8 +34,8 @@ def _cors_origins() -> list[str]:
 
 app = FastAPI(
     title="Pocket Mechanics API",
-    description="Capstone API — Lab 5 blocking generate + Lab 6 SSE stream + session memory",
-    version="0.2.0",
+    description="Capstone API — Labs 5–7 (generate, stream, session memory, agent resilience)",
+    version="0.3.0",
 )
 
 app.add_middleware(

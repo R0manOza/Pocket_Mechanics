@@ -1,6 +1,13 @@
-# Pocket Mechanics — MCP server (Lab 6)
+# Pocket Mechanics — MCP server (Lab 6 + Lab 8 production)
 
-Minimal [Model Context Protocol](https://modelcontextprotocol.io) server exposing one **read-only** tool that forwards a car-maintenance question to your running FastAPI backend (`POST /api/ai/generate`).
+[Model Context Protocol](https://modelcontextprotocol.io) server with **Bearer auth**, **Pydantic validation**, **JSON audit logging**, and **sanitised errors**.
+
+| Module | Role |
+|--------|------|
+| `auth.py` | `MCP_SECRET_KEY` verification |
+| `validated_tool.py` | Input schema |
+| `audit_logger.py` | JSONL audit (`input_hash`, latency, status) |
+| `server.py` | MCP stdio entrypoint |
 
 ## Prerequisites
 

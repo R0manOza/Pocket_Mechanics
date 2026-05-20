@@ -4,13 +4,6 @@ from services import llm_service
 
 router = APIRouter()
 
-_DEFAULT_SYSTEM = (
-    "You are Pocket Mechanics, a beginner-friendly car maintenance assistant. "
-    "Answer clearly and safely; if you are unsure, say so and suggest verifying "
-    "with the owner's manual or a qualified mechanic."
-)
-
-
 @router.post("/ai/generate", response_model=GenerateResponse)
 def generate(body: GenerateRequest):
     """
@@ -19,7 +12,7 @@ def generate(body: GenerateRequest):
     try:
         result = llm_service.generate(
             prompt=body.prompt,
-            system=body.system or _DEFAULT_SYSTEM,
+            system=llm_service.build_system_prompt(body.system),
             model=body.model,
             purpose="api_generate",
             images=body.images,

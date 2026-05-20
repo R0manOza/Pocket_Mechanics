@@ -89,4 +89,29 @@ Episode log (streaming + timing): **`logs/episode-log.csv`** (override with `EPI
 
 Full write-up: **`docs/lab-6.md`**.
 
+---
+
+## Lab 7 — agent architecture, resilience, safety
+
+- **Pattern doc:** `docs/agent-architecture-lab7.md`
+- **AgentState:** `agent/state.py`
+- **Retries / backoff:** `services/resilience.py` (used by `llm_service` and stream start)
+- **High-stakes gate:** stream body may include `repair_steps_approved: true` after user confirms repair guidance
+- **LangGraph proof (local):** `orchestration/langgraph_mini/` — not deployed to Render
+
+Optional stream fields:
+
+```json
+{
+  "message": "How do I replace the serpentine belt?",
+  "session_id": "uuid",
+  "vehicle_context": "2014 Ford Focus",
+  "repair_steps_approved": false
+}
+```
+
+Tag when ready: `lab7-agent-architecture-checkpoint`
+
+Full write-up: **`docs/lab-7.md`**.
+
 Deployment smoke test note: backend README-only changes should not affect runtime behavior.

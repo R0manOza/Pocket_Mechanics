@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 from services import episode_logger
+from services import resilience
+from services import system_prompts
 from services import vision_utils
 
 if not os.environ.get("POCKET_MECHANICS_UNDER_TEST"):
@@ -48,6 +50,17 @@ DEFAULT_OPENROUTER_MODEL = os.environ.get("DEFAULT_MODEL", "google/gemini-2.5-fl
 # Google API model names (no "google/" prefix) — see AI Studio
 DEFAULT_GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 ENABLE_PROMPT_CACHE = os.environ.get("ENABLE_PROMPT_CACHE", "true").lower() == "true"
+USE_EXTENDED_SYSTEM = os.environ.get("EXTENDED_SYSTEM_PROMPT", "true").lower() == "true"
+
+
+def build_system_prompt(override: str | None = None) -> str:
+    """Lab 8 cache target: default assistant + stable safety policy block."""
+    base = override or system_prompts.DEFAULT_SYSTEM
+    if not USE_EXTENDED_SYSTEM:
+        return base
+    if override:
+        return base
+    return f"{base}\n\n{system_prompts.SAFETY_POLICY_BLOCK}"
 DEFAULT_OPENROUTER_FALLBACK_MODELS = [
     "google/gemma-3-27b-it:free",
     "meta-llama/llama-4-maverick:free",
@@ -324,9 +337,19 @@ def generate(
             if image_urls
             else prompt
         )
-        response = m.generate_content(
-            user_parts,
-            request_options={"timeout": float(os.environ.get("GEMINI_TIMEOUT_SECONDS", "30"))},
+        timeout_s = float(os.environ.get("GEMINI_TIMEOUT_SECONDS", "30"))
+
+        def _gemini_call():
+            return m.generate_content(
+                user_parts,
+                request_options={"timeout": timeout_s},
+            )
+
+        response, _retry_count = resilience.call_with_resilience(
+            _gemini_call,
+            session_id=purpose,
+            model=model_name,
+            timeout_ms=int(timeout_s * 1000),
         )
 
         latency = max(1, int((time.perf_counter() - start) * 1000))
@@ -349,31 +372,34 @@ def generate(
         stored_model = ""
         fallback_triggered = False
 
+        timeout_ms = resilience.timeout_ms_from_env()
+
         for attempt_index, model_name in enumerate(_openrouter_model_chain(model)):
             try:
-                response = client.chat.completions.create(
+
+                def _openrouter_call(mn: str = model_name):
+                    return client.chat.completions.create(
+                        model=mn,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": _openrouter_system_content(system, mn),
+                            },
+                            {"role": "user", "content": user_content},
+                        ],
+                    )
+
+                response, _retry_count = resilience.call_with_resilience(
+                    _openrouter_call,
+                    session_id=purpose,
                     model=model_name,
-                    messages=[
-                        {"role": "system", "content": _openrouter_system_content(system, model_name)},
-                        {"role": "user", "content": user_content},
-                    ],
+                    timeout_ms=timeout_ms,
                 )
                 stored_model = model_name
                 fallback_triggered = attempt_index > 0
                 break
             except Exception as exc:
                 last_error = exc
-                failed_latency = max(1, int((time.perf_counter() - start) * 1000))
-                episode_logger.log_llm_call(
-                    session_id=purpose,
-                    model=model_name,
-                    input_tokens=0,
-                    output_tokens=0,
-                    latency_ms=failed_latency,
-                    provider=episode_logger.extract_provider(model_name),
-                    fallback_triggered=attempt_index > 0,
-                    error=type(exc).__name__,
-                )
 
         if response is None:
             raise RuntimeError(f"All OpenRouter models failed: {type(last_error).__name__}")
@@ -414,6 +440,7 @@ def generate(
         cost_usd=record.cost_usd,
         provider=episode_logger.extract_provider(stored_model),
         fallback_triggered=fallback_triggered,
+        timeout_ms=resilience.timeout_ms_from_env(),
     )
 
     return {

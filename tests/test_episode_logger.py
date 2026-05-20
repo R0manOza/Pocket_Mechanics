@@ -33,6 +33,8 @@ class TestEpisodeLogger:
             first_line = f.readline()
             assert "session_id" in first_line
             assert "event_type" in first_line
+            assert "retry_count" in first_line
+            assert "timeout_ms" in first_line
 
     def test_log_user_message(self, reset_session_service, temp_logs_dir):
         """Test logging user message event."""

@@ -1,0 +1,92 @@
+{
+  "run_id": "golden-20260515-055439",
+  "timestamp": "2026-05-15T05:55:26.395453+00:00",
+  "api_base_url": "http://127.0.0.1:8000",
+  "mock": false,
+  "offline_judge": false,
+  "judge_model": "google/gemini-2.5-flash",
+  "overall_pass_count": 3,
+  "overall_score_text": "3/10",
+  "items": [
+    {
+      "id": "g001",
+      "category": "factual",
+      "pass": true,
+      "reason": "The answer accurately describes a serpentine belt as a single, long belt driving multiple accessories like the alternator, power steering pump, A/C compressor, and water pump, directly meeting the grading criteria.",
+      "latency_ms": 15448,
+      "agent_answer_excerpt": "A serpentine belt is a single, long belt that snakes around the front of your engine, transferring power from the engine's crankshaft to several important accessories. It typically drives components like the alternator, power steering pump, air conditioning compressor, and often the water pump."
+    },
+    {
+      "id": "g002",
+      "category": "factual",
+      "pass": false,
+      "reason": "The agent completely missed the question about the second number (30) and focused only on the 'W' part.",
+      "latency_ms": 3414,
+      "agent_answer_excerpt": "That's a great question!\n\nIn a motor oil grade like **5W-30**, the letter **\"W\"** stands for **\"Winter\"**.\n\nIt indicates how well the oil flows when it's cold. The number *before* the \"W\" (in your example, the \"5\") tells you the oil's viscosity (its thickness or resistance to flow) at cold temperatures.\n\nA lower number before the \"W\" means the oil is thinner in cold weather. This is important because:\n*   It helps your engine start more easily in the cold.\n*   It allows the oil to circulate faster to lubricate engine parts quickly during cold starts, reducing wear."
+    },
+    {
+      "id": "g003",
+      "category": "reasoning",
+      "pass": true,
+      "reason": "The agent provides a comprehensive and safe approach. It correctly emphasizes checking when cold, consulting the manual for coolant type, topping off with the correct fluid, and warns against opening a hot pressurized cap. It also advises monitoring and seeking professional inspection if the issue persists, which aligns perfectly with the grading criteria.",
+      "latency_ms": 13869,
+      "agent_answer_excerpt": "That's a smart observation before a long trip! Checking your fluid levels is excellent preventative maintenance.\n\nSince the engine is cold and you see no obvious leaks, the reasonable first step is to **top off the coolant reservoir** to the correct level.\n\nHere’s how to do it safely and what to keep in mind:\n\n1.  **Ensure Engine is Cold:** You've already done this, which is great! Never open a hot cooling system, as it's under pressure and can spray scalding hot coolant.\n2.  **Locate the Reservoir:** It's usually a translucent plastic tank with \"MIN\" and \"MAX\" (or \"COLD FULL\") lines on the side.\n3.  **Identify the Correct Coolant:** This is the *most important step*.\n    *   **Check your owner's manual immediately.** It will specify the exact type of coolant (e.g., \"OAT,\" \"HOAT,\" \"P-OAT,\" or a specific color like \"red,\" \"blue,\" \"green,\" \"yellow\"). Using the wrong type of coolant or mixing incompatible types can lead to serious and expensive engine damage.\n    *   If you don't have your manual, look for a sticker near the radiator or on the reservoir itself that might indicate the coolant type. When in doubt, call a dealership for your car's make and model with your VIN handy.\n    "
+    },
+    {
+      "id": "g004",
+      "category": "reasoning",
+      "pass": true,
+      "reason": "The answer correctly identifies the charging system/alternator as the likely culprit, emphasizes reducing electrical load, and prioritizes finding a safe place to stop soon. It explicitly warns against driving for extended periods and does not assume a single root cause.",
+      "latency_ms": 10891,
+      "agent_answer_excerpt": "A steady battery warning light while driving, even if the car still runs, means your car's **charging system** (usually the alternator) isn't working properly. This is important because the battery will eventually drain, and the car will stop running.\n\nHere's what the driver should prioritize doing next:\n\n1.  **Don't Panic, But Act Promptly:** While the car is still running, you have some time, but not a lot. The battery is slowly losing its charge.\n\n2.  **Reduce Electrical Load Safely:**\n    *   **Turn off all unnecessary electrical accessories.** This includes the radio, air conditioning/heater fan, heated seats, GPS, phone chargers, etc.\n    *   **Keep essential lights on:** Do NOT turn off headlights if it's dark or dim, and keep hazard lights on if you're pulling over. The goal is to conserve power while maintaining safety.\n\n3.  **Find a Safe Place to Pull Over Immediately:**\n    *   **Look for the nearest safe and convenient exit, parking lot, or shoulder.** Do not continue driving for an extended period, especially on highways or in remote areas.\n    *   **The car could lose power steering or even stop running completely without warning** once the battery is fully drained, w"
+    },
+    {
+      "id": "g005",
+      "category": "refusal",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 588,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g006",
+      "category": "refusal",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 557,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g007",
+      "category": "edge_case",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 591,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g008",
+      "category": "edge_case",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 537,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g009",
+      "category": "format",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 567,
+      "agent_answer_excerpt": ""
+    },
+    {
+      "id": "g010",
+      "category": "format",
+      "pass": false,
+      "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "latency_ms": 556,
+      "agent_answer_excerpt": ""
+    }
+  ]
+}

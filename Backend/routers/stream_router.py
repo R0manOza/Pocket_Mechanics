@@ -1,5 +1,5 @@
 """
-Lab 6 — SSE streaming chat with session memory.
+Lab 6 SSE streaming + Lab 7 agent state, resilience, and safety hints.
 POST /api/ai/stream — text/event-stream, data: {"token":"..."}, then usage, then [DONE].
 """
 
@@ -11,16 +11,13 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, model_validator
 
-from services import llm_service, vision_utils
+from agent.state import STEP_RESPOND, initial_state_from_session
+from services import llm_service, resilience, vision_utils
 from services.episode_logger import log_error, log_stream_end, log_user_message
 from services.session_service import load_session, save_session
 
 router = APIRouter()
 
-_DEFAULT_SYSTEM = (
-    "You are Pocket Mechanics, a beginner-friendly car maintenance assistant. "
-    "Be concise unless the user asks for detail. If unsure, say so."
-)
 
 
 class StreamRequest(BaseModel):
@@ -32,6 +29,11 @@ class StreamRequest(BaseModel):
     )
     system: str | None = None
     model: str | None = None
+    vehicle_context: str = Field(default="", max_length=500)
+    repair_steps_approved: bool = Field(
+        default=False,
+        description="Set true after the user confirms they want step-by-step repair guidance.",
+    )
 
     @model_validator(mode="after")
     def message_or_images(self):
@@ -69,27 +71,44 @@ def _gemini_history(non_system_messages: list) -> tuple[list, str | list]:
     return hist, last_parts
 
 
-async def _token_generator(session_id: str, messages: list, model_override: str | None):
+async def _token_generator(
+    session_id: str,
+    messages: list,
+    model_override: str | None,
+    *,
+    approval_required: bool,
+    approved: bool,
+    timeout_ms: int,
+):
     stream_start_ms = int(time.time() * 1000)
     full_response = ""
     input_tokens = 0
     output_tokens = 0
     cache_read_tokens = 0
     cache_write_tokens = 0
-
-    routing = llm_service.get_routing()
-    model_used = (
-        llm_service.normalize_openrouter_model(model_override)
-        if routing == "openrouter"
-        else llm_service.normalize_gemini_model(model_override)
-    )
+    stream_retry_count = 0
+    stream_error: str | None = None
 
     try:
-        if routing == "openrouter":
-            client = llm_service.get_openrouter_client()
-            response = client.chat.completions.create(
-                model=model_used,
-                messages=[
+        if approval_required and not approved:
+            msg = (
+                "This request may involve hands-on repair steps. "
+                "Confirm in the app that you want detailed procedural guidance, then send again "
+                "with repair_steps_approved=true."
+            )
+            yield f"data: {json.dumps({'token': msg})}\n\n"
+            stream_error = "approval_required"
+        else:
+            routing = llm_service.get_routing()
+            model_used = (
+                llm_service.normalize_openrouter_model(model_override)
+                if routing == "openrouter"
+                else llm_service.normalize_gemini_model(model_override)
+            )
+
+            if routing == "openrouter":
+                client = llm_service.get_openrouter_client()
+                or_messages = [
                     {
                         **message,
                         "content": llm_service._openrouter_system_content(message["content"], model_used)
@@ -97,64 +116,96 @@ async def _token_generator(session_id: str, messages: list, model_override: str 
                         else message.get("content"),
                     }
                     for message in messages
-                ],
-                stream=True,
-                stream_options={"include_usage": True},
-            )
-            for chunk in response:
-                if chunk.choices:
-                    delta = chunk.choices[0].delta.content
-                    if delta:
-                        full_response += delta
-                        yield f"data: {json.dumps({'token': delta})}\n\n"
-                if chunk.usage:
-                    input_tokens = chunk.usage.prompt_tokens or 0
-                    output_tokens = chunk.usage.completion_tokens or 0
-                    cache_read_tokens, cache_write_tokens = llm_service._cache_usage_from_openrouter(chunk.usage)
+                ]
 
-        else:
-            llm_service.ensure_gemini()
-            import google.generativeai as genai
+                def _start_openrouter_stream():
+                    return client.chat.completions.create(
+                        model=model_used,
+                        messages=or_messages,
+                        stream=True,
+                        stream_options={"include_usage": True},
+                    )
 
-            system = next(
-                (m["content"] for m in messages if m.get("role") == "system"),
-                _DEFAULT_SYSTEM,
-            )
-            non_sys = [m for m in messages if m.get("role") != "system"]
-            gmodel = genai.GenerativeModel(model_used, system_instruction=system)
-            hist, last_user_parts = _gemini_history(non_sys)
-
-            if not hist:
-                stream_iter = gmodel.generate_content(
-                    last_user_parts,
-                    stream=True,
-                    request_options={"timeout": float(os.environ.get("GEMINI_TIMEOUT_SECONDS", "30"))},
+                response, stream_retry_count = resilience.call_with_resilience(
+                    _start_openrouter_stream,
+                    session_id=session_id,
+                    model=model_used,
+                    timeout_ms=timeout_ms,
                 )
+                for chunk in response:
+                    if chunk.choices:
+                        delta = chunk.choices[0].delta.content
+                        if delta:
+                            full_response += delta
+                            yield f"data: {json.dumps({'token': delta})}\n\n"
+                    if chunk.usage:
+                        input_tokens = chunk.usage.prompt_tokens or 0
+                        output_tokens = chunk.usage.completion_tokens or 0
+                        cache_read_tokens, cache_write_tokens = llm_service._cache_usage_from_openrouter(
+                            chunk.usage
+                        )
+
             else:
-                chat = gmodel.start_chat(history=hist)
-                stream_iter = chat.send_message(
-                    last_user_parts,
-                    stream=True,
-                    request_options={"timeout": float(os.environ.get("GEMINI_TIMEOUT_SECONDS", "30"))},
+                llm_service.ensure_gemini()
+                import google.generativeai as genai
+
+                system = next(
+                    (m["content"] for m in messages if m.get("role") == "system"),
+                    llm_service.build_system_prompt(),
+                )
+                non_sys = [m for m in messages if m.get("role") != "system"]
+                gmodel = genai.GenerativeModel(model_used, system_instruction=system)
+                hist, last_user_parts = _gemini_history(non_sys)
+                timeout_s = float(os.environ.get("GEMINI_TIMEOUT_SECONDS", "30"))
+
+                def _start_gemini_stream():
+                    if not hist:
+                        return gmodel.generate_content(
+                            last_user_parts,
+                            stream=True,
+                            request_options={"timeout": timeout_s},
+                        )
+                    chat = gmodel.start_chat(history=hist)
+                    return chat.send_message(
+                        last_user_parts,
+                        stream=True,
+                        request_options={"timeout": timeout_s},
+                    )
+
+                stream_iter, stream_retry_count = resilience.call_with_resilience(
+                    _start_gemini_stream,
+                    session_id=session_id,
+                    model=model_used,
+                    timeout_ms=timeout_ms,
                 )
 
-            for chunk in stream_iter:
-                t = getattr(chunk, "text", None) or ""
-                if t:
-                    full_response += t
-                    yield f"data: {json.dumps({'token': t})}\n\n"
-                um = getattr(chunk, "usage_metadata", None)
-                if um is not None:
-                    input_tokens = getattr(um, "prompt_token_count", None) or input_tokens
-                    output_tokens = getattr(um, "candidates_token_count", None) or output_tokens
-                    cache_read_tokens = getattr(um, "cached_content_token_count", None) or cache_read_tokens
+                for chunk in stream_iter:
+                    t = getattr(chunk, "text", None) or ""
+                    if t:
+                        full_response += t
+                        yield f"data: {json.dumps({'token': t})}\n\n"
+                    um = getattr(chunk, "usage_metadata", None)
+                    if um is not None:
+                        input_tokens = getattr(um, "prompt_token_count", None) or input_tokens
+                        output_tokens = getattr(um, "candidates_token_count", None) or output_tokens
+                        cache_read_tokens = (
+                            getattr(um, "cached_content_token_count", None) or cache_read_tokens
+                        )
 
     except Exception as e:
-        log_error(session_id, e, context="stream_generation")
+        stream_error = type(e).__name__
+        log_error(
+            session_id,
+            e,
+            context="stream_generation",
+            retry_count=stream_retry_count,
+            timeout_ms=timeout_ms,
+        )
         yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     finally:
         stream_end_ms = int(time.time() * 1000)
+        model_label = model_override or os.environ.get("STREAM_MODEL") or "unknown"
         yield (
             "data: "
             + json.dumps(
@@ -168,6 +219,10 @@ async def _token_generator(session_id: str, messages: list, model_override: str 
                         "cache_read_tokens": cache_read_tokens,
                         "cache_write_tokens": cache_write_tokens,
                         "fallback_triggered": False,
+                        "retry_count": stream_retry_count,
+                        "timeout_ms": timeout_ms,
+                        "approval_required": approval_required,
+                        "approved": approved,
                     }
                 }
             )
@@ -175,7 +230,7 @@ async def _token_generator(session_id: str, messages: list, model_override: str 
         )
         log_stream_end(
             session_id=session_id,
-            model=model_used or "unknown",
+            model=model_label,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             stream_start_ms=stream_start_ms,
@@ -183,6 +238,9 @@ async def _token_generator(session_id: str, messages: list, model_override: str 
             cache_read_tokens=cache_read_tokens,
             cache_write_tokens=cache_write_tokens,
             fallback_triggered=False,
+            retry_count=stream_retry_count,
+            timeout_ms=timeout_ms,
+            error=stream_error,
         )
         if full_response:
             messages.append({"role": "assistant", "content": full_response})
@@ -200,18 +258,36 @@ async def stream_chat(body: StreamRequest):
     log_user_message(body.session_id)
 
     messages = load_session(body.session_id)
-    system = body.system or _DEFAULT_SYSTEM
+    system = llm_service.build_system_prompt(body.system)
     if not messages:
         messages = [{"role": "system", "content": system}]
     user_content = vision_utils.openrouter_user_content(body.message, validated_images)
     messages.append({"role": "user", "content": user_content})
-    # Persist user turn immediately so a failed stream does not lose the message.
     save_session(body.session_id, messages)
+
+    timeout_ms = resilience.timeout_ms_from_env()
+    agent = initial_state_from_session(
+        body.session_id,
+        body.message,
+        messages,
+        vehicle_context=body.vehicle_context.strip(),
+        timeout_ms=timeout_ms,
+    )
+    agent.current_step = STEP_RESPOND
+    if body.repair_steps_approved:
+        agent.approved = True
 
     model_override = body.model or os.environ.get("STREAM_MODEL")
 
     return StreamingResponse(
-        _token_generator(body.session_id, messages, model_override),
+        _token_generator(
+            body.session_id,
+            messages,
+            model_override,
+            approval_required=agent.approval_required,
+            approved=agent.approved,
+            timeout_ms=timeout_ms,
+        ),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

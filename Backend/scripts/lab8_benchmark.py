@@ -79,8 +79,26 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
     parser.add_argument("--model", default=None)
+    parser.add_argument("--json", action="store_true", help="Emit JSON summary for docs")
     args = parser.parse_args()
-    print_markdown(run_benchmark(args.base_url, args.model))
+    results = run_benchmark(args.base_url, args.model)
+    if args.json:
+        import json
+
+        print(
+            json.dumps(
+                {
+                    "median_latency_ms": statistics.median(r.latency_ms for r in results),
+                    "total_cost_usd": sum(r.cost_usd for r in results),
+                    "avg_cost_usd": statistics.mean(r.cost_usd for r in results),
+                    "cache_hits": sum(1 for r in results if r.cache_read_tokens > 0),
+                    "calls": [r.__dict__ for r in results],
+                },
+                indent=2,
+            )
+        )
+    else:
+        print_markdown(results)
 
 
 if __name__ == "__main__":

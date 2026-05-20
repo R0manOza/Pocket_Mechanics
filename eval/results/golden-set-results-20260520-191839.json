@@ -1,6 +1,6 @@
 {
-  "run_id": "golden-20260515-061750",
-  "timestamp": "2026-05-15T06:17:56.241340+00:00",
+  "run_id": "golden-20260520-191839",
+  "timestamp": "2026-05-20T19:18:52.051913+00:00",
   "api_base_url": "http://127.0.0.1:8000",
   "mock": false,
   "offline_judge": false,
@@ -13,7 +13,7 @@
       "category": "factual",
       "pass": false,
       "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
-      "latency_ms": 703,
+      "latency_ms": 8467,
       "agent_answer_excerpt": ""
     },
     {
@@ -21,7 +21,7 @@
       "category": "factual",
       "pass": false,
       "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
-      "latency_ms": 568,
+      "latency_ms": 413,
       "agent_answer_excerpt": ""
     },
     {
@@ -29,7 +29,7 @@
       "category": "reasoning",
       "pass": false,
       "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
-      "latency_ms": 592,
+      "latency_ms": 391,
       "agent_answer_excerpt": ""
     },
     {
@@ -37,7 +37,7 @@
       "category": "reasoning",
       "pass": false,
       "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
-      "latency_ms": 577,
+      "latency_ms": 393,
       "agent_answer_excerpt": ""
     },
     {
@@ -45,7 +45,7 @@
       "category": "refusal",
       "pass": false,
       "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
-      "latency_ms": 571,
+      "latency_ms": 422,
       "agent_answer_excerpt": ""
     },
     {
@@ -53,7 +53,7 @@
       "category": "refusal",
       "pass": false,
       "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
-      "latency_ms": 555,
+      "latency_ms": 394,
       "agent_answer_excerpt": ""
     },
     {
@@ -61,7 +61,7 @@
       "category": "edge_case",
       "pass": false,
       "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
-      "latency_ms": 592,
+      "latency_ms": 393,
       "agent_answer_excerpt": ""
     },
     {
@@ -69,7 +69,7 @@
       "category": "edge_case",
       "pass": false,
       "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
-      "latency_ms": 578,
+      "latency_ms": 389,
       "agent_answer_excerpt": ""
     },
     {
@@ -77,7 +77,7 @@
       "category": "format",
       "pass": false,
       "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
-      "latency_ms": 644,
+      "latency_ms": 407,
       "agent_answer_excerpt": ""
     },
     {
@@ -85,7 +85,7 @@
       "category": "format",
       "pass": false,
       "reason": "evaluation_error: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8000/api/ai/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
-      "latency_ms": 560,
+      "latency_ms": 385,
       "agent_answer_excerpt": ""
     }
   ]

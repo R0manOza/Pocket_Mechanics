@@ -79,9 +79,10 @@ class TestMainApp:
         from main import app
 
         assert app.title == "Pocket Mechanics API"
-        assert "Lab 5" in app.description
-        assert "Lab 6" in app.description
-        assert app.version == "0.2.0"
+        assert "Lab 5" in app.description or "Labs 5" in app.description
+        assert "Lab 6" in app.description or "session memory" in app.description
+        assert "Lab 7" in app.description or "resilience" in app.description
+        assert app.version == "0.3.0"
 
     def test_multiple_health_calls(self, test_client):
         """Test that health endpoint can be called multiple times."""
