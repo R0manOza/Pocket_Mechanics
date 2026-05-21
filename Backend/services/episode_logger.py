@@ -40,6 +40,7 @@ MODEL_PRICING: dict[str, dict[str, float]] = {
     "anthropic/claude-haiku-4-5-20251001": {"input": 1.00, "output": 5.00},
     "anthropic/claude-sonnet-4-6": {"input": 3.00, "output": 15.00},
     "openai/gpt-4o": {"input": 2.50, "output": 10.00},
+    "openai/gpt-5-nano": {"input": 0.05, "output": 0.40}
 }
 
 

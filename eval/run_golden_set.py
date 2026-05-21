@@ -37,7 +37,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(_REPO_ROOT / ".env")
 load_dotenv(_REPO_ROOT / "Backend" / ".env", override=True)
 
-JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "google/gemini-2.5-flash")
+JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "openai/gpt-5.4-nano")
 DEFAULT_API = os.environ.get("POCKET_MECHANICS_API_URL", "http://127.0.0.1:8000").rstrip("/")
 
 

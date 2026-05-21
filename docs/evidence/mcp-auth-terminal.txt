@@ -1,0 +1,11 @@
+# MCP auth / validation terminal evidence
+
+## bad_token
+{
+  "error": "unauthorized"
+}
+
+## invalid_input
+{
+  "error": "invalid_input"
+}

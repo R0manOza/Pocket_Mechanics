@@ -25,7 +25,32 @@ from pydantic import ValidationError
 
 from audit_logger import audit_log
 from auth import extract_bearer_token, verify_bearer_token
+from episode_sync import log_mcp_episode
 from validated_tool import PocketMechanicsTipInput, validate_tool_input
+
+
+def _audit_and_episode(
+    *,
+    tool_name: str,
+    input_dict: dict,
+    result_status: str,
+    latency_ms: int,
+    error: str | None = None,
+) -> None:
+    audit_log(
+        tool_name=tool_name,
+        input_dict=input_dict,
+        result_status=result_status,
+        latency_ms=latency_ms,
+        error=error,
+    )
+    log_mcp_episode(
+        tool_name=tool_name,
+        input_dict=input_dict,
+        result_status=result_status,
+        latency_ms=latency_ms,
+        error=error,
+    )
 
 _root = Path(__file__).resolve().parent.parent
 load_dotenv(_root / ".env")
@@ -90,7 +115,7 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
 
     token = extract_bearer_token(arguments)
     if not verify_bearer_token(token):
-        audit_log(
+        _audit_and_episode(
             tool_name=name,
             input_dict=arguments,
             result_status="auth_failed",
@@ -101,17 +126,8 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
 
     try:
         validated = validate_tool_input(name, arguments)
-    except ValueError:
-        audit_log(
-            tool_name=name,
-            input_dict=arguments,
-            result_status="unknown_tool",
-            latency_ms=elapsed_ms(),
-            error="unknown_tool",
-        )
-        return _error_response("unknown_tool")
     except ValidationError:
-        audit_log(
+        _audit_and_episode(
             tool_name=name,
             input_dict=arguments,
             result_status="validation_failed",
@@ -119,6 +135,15 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
             error="invalid_input",
         )
         return _error_response("invalid_input")
+    except ValueError:
+        _audit_and_episode(
+            tool_name=name,
+            input_dict=arguments,
+            result_status="unknown_tool",
+            latency_ms=elapsed_ms(),
+            error="unknown_tool",
+        )
+        return _error_response("unknown_tool")
 
     vehicle = validated.vehicle_hint.strip()
     prompt = validated.question.strip()
@@ -146,7 +171,7 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
             "latency_ms_mcp_client": elapsed_ms(),
             "source": "pocket_mechanics_api",
         }
-        audit_log(
+        _audit_and_episode(
             tool_name=name,
             input_dict=validated.model_dump(by_alias=True),
             result_status="ok",
@@ -154,7 +179,7 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
         )
         return [types.TextContent(type="text", text=json.dumps(payload, indent=2))]
     except httpx.HTTPStatusError:
-        audit_log(
+        _audit_and_episode(
             tool_name=name,
             input_dict=validated.model_dump(by_alias=True),
             result_status="error",
@@ -164,7 +189,7 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
         return _json_response({"error": "upstream_http_error"})
     except Exception:
         logger.exception("MCP tool internal failure")
-        audit_log(
+        _audit_and_episode(
             tool_name=name,
             input_dict=validated.model_dump(by_alias=True),
             result_status="error",

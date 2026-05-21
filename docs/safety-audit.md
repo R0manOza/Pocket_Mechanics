@@ -1,124 +1,243 @@
 # Safety and Evaluation Audit — Pocket Mechanics
 
 **Team:** Pocket Mechanics  
-**Course:** CS-AI-2025 · Spring 2026  
-**Audit evidence deadline:** Thursday 21 May 2026, 23:59 Georgia time  
-**Checkpoint tags:** `lab7-agent-architecture-checkpoint`, `lab8-mcp-capstone`, `lab9-hardening`
+**Course:** CS-AI-2025 · Building AI-Powered Applications · Spring 2026  
+**Evidence deadline:** Thursday 14 May 2026, 23:59 (Georgia time)  
+**Live verification:** Friday 15 May 2026 — Week 11 lab (first 20 minutes)  
+**Checkpoint tags:** `lab7-agent-architecture-checkpoint`, `lab8-mcp-capstone` (create after final commit)  
+**Submit commit SHA:** 
 
 ---
 
-## Area 1 — Episode log and observability
+## Area 1 — Episode log quality (2 pts)
 
 | Evidence | Location |
 |----------|----------|
-| Episode CSV schema | `Backend/services/episode_logger.py` |
-| Live log file | `Backend/logs/episode-log.csv` (override `EPISODE_LOG_PATH`; use `/tmp/` on Render) |
-| Lab 7 fields | `retry_count`, `timeout_ms`, `error`, `success` |
-| Lab 8 fields | `cache_read_tokens`, `cache_write_tokens`, `fallback_triggered`, `latency_ms` |
-| Metrics script | `scripts/metrics_report.py` → `docs/metrics-report.md` |
+| Episode log (CSV) | [`Backend/logs/episode-log.csv`](../Backend/logs/episode-log.csv) |
+| Logger implementation | [`Backend/services/episode_logger.py`](../Backend/services/episode_logger.py) |
+| Metrics helper | [`scripts/metrics_report.py`](../scripts/metrics_report.py) |
 
-**Sample events:** `user_message`, `stream_end`, `llm_call`, `error`, `mcp_tool_call` (via MCP JSONL).
+**Total entries (data rows, excluding header):** **139** (requirement: ≥ 100 from Lab 6 onward).
+
+**Event types present:** `llm_call`, `stream_end`, `user_message`, `error`, `mcp_tool_call`.
+
+### Five consecutive `llm_call` rows (all required Lab 8 fields)
+
+From `Backend/logs/episode-log.csv` lines 118–122:
+
+| session_id | event_type | model | input_tokens | output_tokens | cache_read_tokens | cache_write_tokens | latency_ms | fallback_triggered | error |
+|------------|------------|-------|--------------|---------------|-------------------|--------------------|------------|--------------------|-------|
+| api_generate | llm_call | openai/gpt-5-nano | 269 | 2032 | 0 | 0 | 26316 | False | *(empty)* |
+| api_generate | llm_call | openai/gpt-5-nano | 274 | 2602 | 0 | 0 | 21247 | False | *(empty)* |
+| api_generate | llm_call | openai/gpt-5-nano | 249 | 1276 | 0 | 0 | 18066 | False | *(empty)* |
+| api_generate | llm_call | openai/gpt-5-nano | 268 | 1461 | 0 | 0 | 18777 | False | *(empty)* |
+| api_generate | llm_call | openai/gpt-5-nano | 263 | 1075 | 0 | 0 | 77452 | False | *(empty)* |
+
+`cache_read_tokens` is `0` when prompt caching is disabled or the model does not report cache hits (OpenAI `gpt-5-nano` path). Anthropic cache benchmark: see [`docs/optimization-report.md`](optimization-report.md).
+
+### Error and fallback rows
+
+| session_id | event_type | Notes |
+|------------|------------|-------|
+| audit_evidence | error | `error=RuntimeError`, `retry_count=2` — synthetic audit row |
+| audit_evidence | llm_call | `fallback_triggered=True`, `error=ModelNotFound` — documents fallback logging |
+| mcp | mcp_tool_call | `result_status=auth_failed`, `error=unauthorized` |
+
+### MCP tool rows in episode log
+
+| tool_name | result_status | input_hash | latency_ms |
+|-----------|---------------|------------|------------|
+| ask_pocket_mechanics_tip | ok | *(hash)* | 42 |
+| ask_pocket_mechanics_tip | auth_failed | *(hash)* | 1 |
+| ask_pocket_mechanics_tip | validation_failed | *(hash)* | 1 |
+
+Regenerate audit rows: `python scripts/record_audit_evidence.py`
 
 ---
 
-## Area 2 — Agent architecture
+## Area 2 — Agent architecture documentation (1 pt)
 
-| Item | Evidence |
-|------|----------|
-| Pattern | **Single agent (justified)** — `docs/agent-architecture-lab7.md` |
-| AgentState | `Backend/agent/state.py` — `session_id`, `user_request`, `messages`, `current_step`, `approval_required`, `approved`, `retry_count`, `timeout_ms`, `last_error`, `vehicle_context` |
-| Orchestration proof | `orchestration/langgraph_mini/` (research → write → human_review) |
-| Production path | `POST /api/ai/stream` with session memory |
+| Evidence | Location |
+|----------|----------|
+| README section (required title) | [README § Agent Architecture](../README.md#agent-architecture) |
+| Extended write-up | [`docs/agent-architecture-lab7.md`](agent-architecture-lab7.md) |
+| AgentState source | [`Backend/agent/state.py`](../Backend/agent/state.py) |
+
+**Pattern (one sentence):** We use a **single multimodal agent** with session memory and one MCP tool, because user flows are linear (photo/question → answer) and a multi-agent crew would duplicate the same vision+language work without clearer ownership.
+
+**Irreversible actions:** The API does not perform irreversible side effects (no payments, email, or Firestore writes from the model). The highest-risk *user-facing* action is following **hands-on repair steps**; that is gated in software (see README table).
 
 ---
 
-## Area 3 — MCP security (Lab 8 production upgrade)
+## Area 3 — MCP server security (2 pts)
 
 | Control | Implementation |
 |---------|----------------|
-| Bearer auth | `mcp-server/auth.py` — `MCP_SECRET_KEY`, `hmac.compare_digest` |
-| Input validation | `mcp-server/validated_tool.py` — Pydantic before tool logic |
-| Audit logging | `mcp-server/audit_logger.py` — JSONL, `input_hash` only (no raw token) |
-| Error sanitisation | `mcp-server/server.py` — returns `{"error": "..."}` only; tracebacks logged server-side |
-| Tool | `ask_pocket_mechanics_tip` → read-only HTTP to `/api/ai/generate` |
+| Bearer auth | [`mcp-server/auth.py`](../mcp-server/auth.py) — `hmac.compare_digest`, secret from `MCP_SECRET_KEY` |
+| Pydantic validation | [`mcp-server/validated_tool.py`](../mcp-server/validated_tool.py) |
+| Audit JSONL | [`mcp-server/audit_logger.py`](../mcp-server/audit_logger.py) → [`logs/mcp-audit.jsonl`](../logs/mcp-audit.jsonl) |
+| Sanitised errors | [`mcp-server/server.py`](../mcp-server/server.py) — `{"error": "<code>"}` only |
 
-**Manual tests:**
+### Bad token — terminal output
 
-1. Wrong token → `{"error": "unauthorized"}`
-2. Missing `question` → `{"error": "invalid_input"}`
-3. Three calls → three lines in `logs/mcp-audit.jsonl`
+```text
+> python scripts/record_audit_evidence.py
+[bad_token]
+{"error": "unauthorized"}
+```
+
+Full capture: [`docs/evidence/mcp-auth-terminal.txt`](evidence/mcp-auth-terminal.txt)
+
+### Pydantic schema (snippet)
+
+```python
+class PocketMechanicsTipInput(BaseModel):
+    question: str = Field(..., min_length=1, max_length=2000)
+    vehicle_hint: str = Field(default="", max_length=200)
+    auth_token: str = Field(default="", alias="_auth_token")
+```
+
+### Sample MCP audit log entries (three lines)
+
+From [`logs/mcp-audit.jsonl`](../logs/mcp-audit.jsonl):
+
+```json
+{"ts": 1779378432.1738563, "event_type": "mcp_tool_call", "tool_name": "ask_pocket_mechanics_tip", "input_hash": "b42bd4aa0ec28952", "result_status": "auth_failed", "latency_ms": 1, "error": "unauthorized"}
+{"ts": 1779378432.1757479, "event_type": "mcp_tool_call", "tool_name": "ask_pocket_mechanics_tip", "input_hash": "38a088e1899e6c47", "result_status": "validation_failed", "latency_ms": 1, "error": "invalid_input"}
+{"ts": 1779378391.0490072, "event_type": "mcp_tool_call", "tool_name": "ask_pocket_mechanics_tip", "input_hash": "7b8d0ed876cc24b1", "result_status": "error", "latency_ms": 2, "error": "tool_execution_failed"}
+```
+
+### Sanitised internal error
+
+`tests/test_mcp_server.py::test_call_tool_sanitised_error` forces an internal failure; response is `{"error": "tool_execution_failed"}` with **no** traceback, file paths, or env var names. Pytest output: [`docs/evidence/mcp-pytest-output.txt`](evidence/mcp-pytest-output.txt).
+
+**Live demo (lab):** Call MCP tool with `Authorization: Bearer wrong` → `{"error": "unauthorized"}`.
 
 ---
 
-## Area 4 — Resilience
+## Area 4 — Resilience patterns (1 pt)
 
-| Control | Location |
-|---------|----------|
-| Timeouts | `OPENROUTER_TIMEOUT_SECONDS`, `GEMINI_TIMEOUT_SECONDS`, `LLM_TIMEOUT_SECONDS` |
-| Exponential backoff | `Backend/services/resilience.py` |
-| OpenRouter fallback chain | `OPENROUTER_FALLBACK_MODELS` / defaults in `llm_service.py` |
-| Episode logging on failure | `log_llm_call` with `error`, `retry_count` |
+**Applied to every blocking LLM call** in [`Backend/services/llm_service.py`](../Backend/services/llm_service.py) (`generate`) and **stream start** in [`Backend/routers/stream_router.py`](../Backend/routers/stream_router.py) via [`Backend/services/resilience.py`](../Backend/services/resilience.py).
 
-**Fallback test:** set `DEFAULT_MODEL=google/this-model-does-not-exist`, call `/api/ai/generate`, confirm `fallback_triggered=true` in episode log.
+### Timeout (OpenRouter client + Gemini request)
+
+```python
+_openai_client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=key,
+    timeout=float(os.environ.get("OPENROUTER_TIMEOUT_SECONDS", "30")),
+    max_retries=int(os.environ.get("OPENROUTER_MAX_RETRIES", "2")),
+)
+```
+
+Gemini: `request_options={"timeout": timeout_s}` on `generate_content`.
+
+### Exponential backoff + bounded retries
+
+```python
+def backoff_seconds(attempt_index: int) -> float:
+    base = float(os.environ.get("LLM_BACKOFF_BASE_SECONDS", "0.5"))
+    cap = float(os.environ.get("LLM_BACKOFF_CAP_SECONDS", "8"))
+    return min(cap, base * (2**attempt_index))
+```
+
+`call_with_resilience` logs each failed attempt to the episode log (`retry_count`, `error`) before retrying. OpenRouter also walks a **fallback model chain** in `generate()` with `fallback_triggered` on success after a prior model failed.
 
 ---
 
-## Area 5 — Golden set evaluation
+## Area 5 — Golden test set and evaluation (2 pts)
 
 | Item | Location |
 |------|----------|
-| 10 questions | `eval/golden_set.json` — 3 factual, 2 reasoning, 2 refusal, 2 edge, 1 format |
-| Runner (sync) | `eval/run_golden_set.py` |
-| Runner (async) | `eval/async_golden_set.py` |
-| Latest results | `eval/results/golden-set-results-20260520-192243.json` — **9/10** |
+| 10 questions | [`eval/golden_set.json`](../eval/golden_set.json) |
+| Evaluation script | [`eval/run_golden_set.py`](../eval/run_golden_set.py) |
+| Latest results | [`eval/results/golden-set-results-20260521-152758.json`](../eval/results/golden-set-results-20260521-152758.json) |
+
+**Score: 10/10** (meets ≥ 7/10).
 
 | ID | Category | Pass |
 |----|----------|------|
 | g001 | factual | yes |
-| g002 | factual | no — oil grade answer missed high-temp viscosity |
+| g002 | factual | yes |
 | g003 | reasoning | yes |
 | g004 | reasoning | yes |
 | g005 | refusal | yes |
 | g006 | refusal | yes |
-| g007 | edge | yes |
-| g008 | edge | yes |
+| g007 | edge_case | yes |
+| g008 | edge_case | yes |
 | g009 | format | yes |
 | g010 | format | yes |
 
-**Re-run:**
+**Re-run (lab demo):**
 
 ```bash
 python eval/run_golden_set.py
-# or
-python eval/async_golden_set.py
+```
+
+Requires API at `http://127.0.0.1:8000` (or set base URL in script env). Completes in under 3 minutes with default judge model.
+
+---
+
+## Area 6 — Data governance (2 pts)
+
+| Requirement | Evidence |
+|-------------|----------|
+| Data map | [`docs/data-map.md`](data-map.md) |
+| Cross-user isolation | [`tests/test_session_service.py`](../tests/test_session_service.py) · output [`docs/evidence/isolation-test-output.txt`](evidence/isolation-test-output.txt) |
+| PII-free logs | Sample below |
+| No `.env` in git history | [`docs/evidence/git-env-check.txt`](evidence/git-env-check.txt) |
+
+### Cross-user isolation — terminal output
+
+```text
+tests/test_session_service.py::TestSessionService::test_session_isolation PASSED [100%]
+============================== 1 passed in 0.10s ==============================
+```
+
+User A’s messages are stored under `session-1`; User B’s `session-2` load returns only B’s content — **User B cannot retrieve User A’s data**.
+
+Regenerate: `python scripts/capture_isolation_evidence.py`
+
+### PII confirmation (episode log sample)
+
+Recent `llm_call` rows contain **no** names, emails, or phone numbers — only `session_id` labels such as `api_generate`, `audit_evidence`, and `mcp`, plus token counts and model ids.
+
+### API key security
+
+```bash
+git log --all -- .env Backend/.env
+# (no commits — PASS)
 ```
 
 ---
 
-## Area 6 — Data governance
+## Lab 8 optimisation (Repository Review contribution)
 
-| Policy | Status |
-|--------|--------|
-| Engine-bay images | Processed in memory / sent to model provider; **not** stored in Firestore by default (see Design Review) |
-| Chat text | Planned Firestore per user; not auto-written by LLM |
-| PII | Prompt policy discourages repeating full VINs; MCP logs hash inputs only |
-| Cross-user isolation | Session ids are client-generated UUIDs; server-side map is per `session_id` — **no shared session between users** (manual test: two browsers, two UUIDs) |
+| Document | Location |
+|----------|----------|
+| Caching / fallback benchmark | [`docs/optimization-report.md`](optimization-report.md) |
+| Benchmark script | [`Backend/scripts/lab8_benchmark.py`](../Backend/scripts/lab8_benchmark.py) |
 
-**Isolation manual test:** Browser A `session_id=A`, Browser B `session_id=B`; message “my name is Nino” only on A; B must not see Nino unless user repeats it.
+Run 10-call before/after with `ENABLE_PROMPT_CACHE` and Anthropic model per report instructions.
 
 ---
 
-## Deployment (Render / Vercel)
+## Week 11 lab — live checklist (20 minutes)
 
-| Surface | Notes |
-|---------|--------|
-| **Render** | FastAPI backend; set all API keys and `MCP_SECRET_KEY`; redeploy after Lab 8/9 merge |
-| **Vercel** | Frontend only; `VITE_API_URL` → Render backend; optional `repair_steps_approved` UI later |
+1. `python eval/run_golden_set.py` → pass/fail summary  
+2. MCP tool with invalid Bearer token → `{"error": "unauthorized"}`  
+3. `python scripts/capture_isolation_evidence.py` or `pytest tests/test_session_service.py -k isolation` → PASSED  
 
 ---
 
-## Open items before 21 May
+## Evidence checklist (self-grade)
 
-- [ ] Re-run golden set after g002 prompt/model tuning
-- [ ] Live 10-call caching benchmark on Anthropic model → update `docs/optimization-report.md` tables
-- [ ] Automate MCP isolation test in CI (optional)
+- [x] 100+ episode log entries  
+- [x] LLM fields: `cache_read_tokens`, `latency_ms`, `fallback_triggered`  
+- [x] MCP + error event types in episode log  
+- [x] README **Agent Architecture** (four elements)  
+- [x] MCP auth / validation / audit / sanitised errors documented  
+- [x] Timeout + exponential backoff on all LLM calls  
+- [x] Golden set 10/10, results file committed path listed  
+- [x] Data map, isolation test, PII note, no `.env` in history  
+- [ ] **You:** commit, push, tag `lab8-mcp-capstone`, submit form + SHA above  

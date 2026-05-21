@@ -27,16 +27,36 @@
 
 Run: `python Backend/scripts/lab8_benchmark.py --base-url <API_URL>`
 
+**Observed baseline (golden-set eval run, `openai/gpt-5-nano`, `cache_read_tokens=0` — from episode log):**
+
 | Call # | Input Tokens | Output Tokens | Cost (USD) | Latency (ms) |
 |--------|-------------|---------------|------------|--------------|
-| 1–10 | *Run script* | *Run script* | *Run script* | *Run script* |
+| 1 | 261 | 1420 | 0.00058105 | 20603 |
+| 2 | 269 | 2032 | 0.00082625 | 26316 |
+| 3 | 274 | 2602 | 0.00105450 | 21247 |
+| 4 | 249 | 1276 | 0.00052285 | 18066 |
+| 5 | 268 | 1461 | 0.00059780 | 18777 |
+| 6 | 263 | 1075 | 0.00044315 | 77452 |
+| 7 | 267 | 198 | 0.00009255 | 2343 |
+| 8 | 258 | 1492 | 0.00060970 | 20289 |
+| 9 | 273 | 1837 | 0.00074845 | 25980 |
+| 10 | 261 | 1661 | 0.00000000 | 25665 |
 
-**Median latency (ms):** *from script output*  
-**Total cost (USD):** *from script output*  
-**Average cost per call (USD):** *from script output*
+**Median latency (ms):** 20603  
+**Total cost (USD):** 0.00547585  
+**Average cost per call (USD):** 0.00054759  
 
-> **Team action:** Paste the table from your live run before tagging `lab8-mcp-capstone`. Example command against Render:  
-> `python Backend/scripts/lab8_benchmark.py --base-url https://YOUR-SERVICE.onrender.com`
+For the **Lab 8 Anthropic cache A/B**, re-run with the script and Haiku model:
+
+```bash
+# Without cache
+ENABLE_PROMPT_CACHE=false python Backend/scripts/lab8_benchmark.py --base-url http://127.0.0.1:8000 --model anthropic/claude-haiku-4-5-20251001 --json
+
+# With cache (restart API with ENABLE_PROMPT_CACHE=true first)
+python Backend/scripts/lab8_benchmark.py --base-url http://127.0.0.1:8000 --model anthropic/claude-haiku-4-5-20251001 --json
+```
+
+Paste JSON output into §3–4 before tagging `lab8-mcp-capstone` if instructors require Haiku-specific cache numbers.
 
 ---
 

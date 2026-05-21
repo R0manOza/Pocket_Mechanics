@@ -20,27 +20,63 @@ Capstone project (**CS-AI-2025 / Spring 2026**): a web app that helps **non-mech
 | `docs/lab-8.md` | **Lab 8** — production MCP, caching benchmark |
 | `docs/lab-9.md` | **Lab 9** — golden set + hardening |
 | `docs/safety-audit.md` | **Week 11** — six evidence areas |
+| `docs/data-map.md` | **Week 11** — data governance / retention |
+| `docs/evidence/` | Terminal captures for audit (MCP auth, isolation, git) |
 | `docs/optimization-report.md` | **Lab 8** — caching / fallback benchmark |
 | `docs/metrics-report.md` | **Lab 9** — episode log metrics |
 | `scripts/metrics_report.py` | Computes six metrics from episode log |
 | `tests/` | Integration tests |
 
-## Model selection decisions (Lab 9)
+## Model Selection Decisions
 
-| Call / endpoint | Task type | Model | Why |
-|-----------------|-----------|-------|-----|
-| `POST /api/ai/generate` | Multimodal Q&A, vision | `google/gemini-2.5-flash` (OpenRouter) | Vision + cost; team default |
-| `POST /api/ai/stream` | Interactive chat | Same as routing env | One stack; session memory |
-| OpenRouter fallback | Degraded availability | `google/gemma-3-27b-it:free`, `meta-llama/llama-4-maverick:free` | Free tier when primary fails |
-| Prompt cache benchmark | Stable system prefix | `anthropic/claude-haiku-4-5-20251001` | Anthropic `cache_control` support |
-| Golden set judge | Deterministic pass/fail | `google/gemini-2.5-flash` | Cheap, JSON-friendly judge |
-| MCP tool | Delegated maintenance tip | Uses backend `/api/ai/generate` | Single source of truth |
+| Call location | Current model | Reason for choice | Alternative considered |
+|---------------|---------------|-------------------|------------------------|
+| `POST /api/ai/generate` | `google/gemini-2.5-flash` (OpenRouter) or env default | Vision + cost for multimodal Q&A | `claude-sonnet-4-6`: higher cost |
+| `POST /api/ai/stream` | Same as `DEFAULT_MODEL` / routing | One stack; session memory | Separate “fast” model: split behaviour |
+| OpenRouter fallback chain | `google/gemma-3-27b-it:free`, `meta-llama/llama-4-maverick:free` | Availability when primary fails | Paid backup only: higher cost |
+| Prompt cache benchmark | `anthropic/claude-haiku-4-5-20251001` | Anthropic `cache_control` on OpenRouter | Gemini: no equivalent cache fields |
+| Golden set judge | `google/gemini-2.5-flash` (configurable) | Cheap JSON pass/fail | Larger judge model: slower eval |
+| MCP `ask_pocket_mechanics_tip` | Delegates to `/api/ai/generate` | Single source of truth for answers | Duplicate model in MCP process |
 
-## Agent architecture (Lab 7)
+## Agent Architecture
 
-Pocket Mechanics uses a **single-agent** design with explicit **`AgentState`**, **timeouts + exponential backoff** on LLM calls (`Backend/services/resilience.py`), and a **human approval gate** for hands-on repair questions on the stream API.
+### Pattern
 
-Details: **`docs/agent-architecture-lab7.md`** · Runbook: **`docs/lab-7.md`**
+**Single agent (justified).** Users follow one linear flow (photo and/or question → maintenance guidance). A supervisor/multi-agent setup would repeat the same multimodal call without clearer ownership. A **LangGraph proof** (`orchestration/langgraph_mini/`: research → write → human_review) documents how we could split stages later; production uses one model call plus explicit state and gates.
+
+### AgentState
+
+```python
+@dataclass
+class AgentState:
+    session_id: str
+    user_request: str
+    messages: list[dict[str, Any]] = field(default_factory=list)
+    current_step: str = "idle"  # idle | load_session | research | generate | await_approval | respond | done | error
+    approval_required: bool = False
+    approved: bool = False
+    retry_count: int = 0
+    timeout_ms: int = 30_000
+    last_error: str | None = None
+    vehicle_context: str = ""
+    research_notes: str = ""
+    draft_answer: str = ""
+```
+
+Source: [`Backend/agent/state.py`](Backend/agent/state.py)
+
+### Irreversible actions and guards
+
+The API **does not** execute irreversible automation (no payments, account deletion, or Firestore writes from the model). User-facing risk is acting on **hands-on repair guidance**.
+
+| Action | Risk | Checkpoint / guard |
+|--------|------|-------------------|
+| Following step-by-step repair instructions | Injury / vehicle damage | `approval_required_for_request()` sets `approval_required`; stream API blocks the model until `repair_steps_approved=true` |
+| Relying on maintenance advice without verification | Wrong repair | `SafetyBanner` + system safety policy; model told to defer to manual/mechanic |
+| Uploading engine-bay photos | Privacy (plates, reflections) | Upload disclosure; images not stored in Firestore by default |
+| MCP tool calling backend generate | Unauthenticated use | Bearer token (`MCP_SECRET_KEY`) verified before tool logic |
+
+Resilience: [`Backend/services/resilience.py`](Backend/services/resilience.py) — timeout + exponential backoff on every LLM call. Details: [`docs/agent-architecture-lab7.md`](docs/agent-architecture-lab7.md) · [`docs/lab-7.md`](docs/lab-7.md)
 
 ## Design Review
 

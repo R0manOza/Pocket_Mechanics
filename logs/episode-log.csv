@@ -1,0 +1,3 @@
+session_id,event_type,episode_id,ts,model,tool_name,provider,input_hash,result_status,arguments,result_summary,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,stream_start_ms,stream_end_ms,latency_ms,fallback_triggered,was_cancelled,success,cost_usd,error,retry_count,timeout_ms
+mcp,mcp_tool_call,ep_805218b35cae,2026-05-21T15:46:58.475545+00:00,,ask_pocket_mechanics_tip,,a0c7e4086d2252c6,unknown_tool,,,0,0,0,0,,,1,False,False,False,0.0,unknown_tool,0,
+mcp,mcp_tool_call,ep_e97aec53fb52,2026-05-21T15:48:31.912899+00:00,,ask_pocket_mechanics_tip,,b3f8c9ae235e8e3b,error,,,0,0,0,0,,,2,False,False,False,0.0,tool_execution_failed,0,

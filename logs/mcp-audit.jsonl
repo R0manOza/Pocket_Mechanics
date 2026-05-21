@@ -1,0 +1,10 @@
+{"ts": 1779378327.0609593, "event_type": "mcp_tool_call", "tool_name": "ask_pocket_mechanics_tip", "input_hash": "b42bd4aa0ec28952", "result_status": "auth_failed", "latency_ms": 1, "error": "unauthorized"}
+{"ts": 1779378327.0635595, "event_type": "mcp_tool_call", "tool_name": "ask_pocket_mechanics_tip", "input_hash": "44136fa355b3678a", "result_status": "unknown_tool", "latency_ms": 1, "error": "unknown_tool"}
+{"ts": 1779378334.5361264, "event_type": "mcp_tool_call", "tool_name": "ask_pocket_mechanics_tip", "input_hash": "b42bd4aa0ec28952", "result_status": "auth_failed", "latency_ms": 1, "error": "unauthorized"}
+{"ts": 1779378385.5251808, "event_type": "mcp_tool_call", "tool_name": "ask_pocket_mechanics_tip", "input_hash": "b42bd4aa0ec28952", "result_status": "auth_failed", "latency_ms": 1, "error": "unauthorized"}
+{"ts": 1779378385.5269074, "event_type": "mcp_tool_call", "tool_name": "ask_pocket_mechanics_tip", "input_hash": "38a088e1899e6c47", "result_status": "unknown_tool", "latency_ms": 1, "error": "unknown_tool"}
+{"ts": 1779378391.0490072, "event_type": "mcp_tool_call", "tool_name": "ask_pocket_mechanics_tip", "input_hash": "7b8d0ed876cc24b1", "result_status": "error", "latency_ms": 2, "error": "tool_execution_failed"}
+{"ts": 1779378418.4707785, "event_type": "mcp_tool_call", "tool_name": "ask_pocket_mechanics_tip", "input_hash": "38a088e1899e6c47", "result_status": "unknown_tool", "latency_ms": 1, "error": "unknown_tool"}
+{"ts": 1779378432.1738563, "event_type": "mcp_tool_call", "tool_name": "ask_pocket_mechanics_tip", "input_hash": "b42bd4aa0ec28952", "result_status": "auth_failed", "latency_ms": 1, "error": "unauthorized"}
+{"ts": 1779378432.1757479, "event_type": "mcp_tool_call", "tool_name": "ask_pocket_mechanics_tip", "input_hash": "38a088e1899e6c47", "result_status": "validation_failed", "latency_ms": 1, "error": "invalid_input"}
+{"ts": 1779378511.9120271, "event_type": "mcp_tool_call", "tool_name": "ask_pocket_mechanics_tip", "input_hash": "7b8d0ed876cc24b1", "result_status": "error", "latency_ms": 2, "error": "tool_execution_failed"}

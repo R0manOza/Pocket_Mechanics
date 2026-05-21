@@ -8,9 +8,6 @@ import os
 
 logger = logging.getLogger("pocket-mechanics-mcp.auth")
 
-MCP_SECRET = os.environ.get("MCP_SECRET_KEY", "").strip()
-
-
 def extract_bearer_token(arguments: dict) -> str:
     """Accept MCP tool arg `_auth_token` or `authorization: Bearer <token>`."""
     if not arguments:
@@ -25,9 +22,10 @@ def extract_bearer_token(arguments: dict) -> str:
 
 
 def verify_bearer_token(token: str) -> bool:
-    if not MCP_SECRET:
+    secret = os.environ.get("MCP_SECRET_KEY", "").strip()
+    if not secret:
         logger.warning("MCP_SECRET_KEY is not configured; rejecting MCP tool call")
         return False
     if not token:
         return False
-    return hmac.compare_digest(MCP_SECRET, token)
+    return hmac.compare_digest(secret, token)

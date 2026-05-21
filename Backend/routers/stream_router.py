@@ -88,6 +88,11 @@ async def _token_generator(
     cache_write_tokens = 0
     stream_retry_count = 0
     stream_error: str | None = None
+    model_used = (
+        llm_service.normalize_openrouter_model(model_override)
+        if llm_service.get_routing() == "openrouter"
+        else llm_service.normalize_gemini_model(model_override)
+    )
 
     try:
         if approval_required and not approved:
@@ -205,7 +210,6 @@ async def _token_generator(
 
     finally:
         stream_end_ms = int(time.time() * 1000)
-        model_label = model_override or os.environ.get("STREAM_MODEL") or "unknown"
         yield (
             "data: "
             + json.dumps(
@@ -230,7 +234,7 @@ async def _token_generator(
         )
         log_stream_end(
             session_id=session_id,
-            model=model_label,
+            model=model_used,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             stream_start_ms=stream_start_ms,
