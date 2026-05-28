@@ -5,7 +5,7 @@
 **Evidence deadline:** Thursday 14 May 2026, 23:59 (Georgia time)  
 **Live verification:** Friday 15 May 2026 — Week 11 lab (first 20 minutes)  
 **Checkpoint tags:** `lab7-agent-architecture-checkpoint`, `lab8-mcp-capstone` (create after final commit)  
-**Submit commit SHA:** 
+**Submit commit SHA:** 7456456c24983a5c6ef75b3e898b03a768031c89
 
 ---
 

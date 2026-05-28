@@ -3,7 +3,7 @@
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 CI watches this frontend directory for deployment-triggering changes and protected production Vercel prebuilt deploy checks.!!!
-Frontend README updates also count as frontend changes for the deployment workflow.
+Frontend README updates also count as frontend changes for the deployment workflow..
 
 Currently, two official plugins are available:
 
