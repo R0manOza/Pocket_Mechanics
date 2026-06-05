@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react"
 import type { ChatMessage } from "../lib/types"
 import { MessageBubble } from "./MessageBubble"
+import { TypingIndicator } from "./TypingIndicator"
 
 interface Props {
   history: ChatMessage[]
@@ -15,7 +16,8 @@ export function ChatWindow({ history, pendingAssistant, isStreaming }: Props) {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [history.length, pendingAssistant, isStreaming])
 
-  const empty = history.length === 0 && !pendingAssistant
+  const waitingForFirstToken = isStreaming && !pendingAssistant
+  const empty = history.length === 0 && !pendingAssistant && !isStreaming
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto px-3 py-4">
@@ -40,13 +42,14 @@ export function ChatWindow({ history, pendingAssistant, isStreaming }: Props) {
               imageUrl={m.imageUrl}
             />
           ))}
-          {pendingAssistant && (
+          {waitingForFirstToken && <TypingIndicator />}
+          {pendingAssistant ? (
             <MessageBubble
               role="assistant"
               content={pendingAssistant}
               streaming={isStreaming}
             />
-          )}
+          ) : null}
         </>
       )}
       <div ref={endRef} />

@@ -17,7 +17,7 @@ if not os.environ.get("POCKET_MECHANICS_UNDER_TEST"):
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import ai_router, stream_router
+from routers import ai_router, models_router, stream_router
 
 DEFAULT_CORS_ORIGINS = [
     "http://localhost:3000",
@@ -47,6 +47,7 @@ app.add_middleware(
 
 app.include_router(ai_router.router, prefix="/api")
 app.include_router(stream_router.router, prefix="/api")
+app.include_router(models_router.router, prefix="/api")
 
 
 @app.get("/health")

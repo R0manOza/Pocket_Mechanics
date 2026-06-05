@@ -21,20 +21,20 @@ class TestEpisodeLogger:
         assert os.path.exists(os.environ["EPISODE_LOG_PATH"])
         assert result.cost_usd >= 0
 
-    def test_log_episode_writes_csv_header(self, reset_session_service, temp_logs_dir):
-        """Test that episode log includes CSV header."""
+    def test_log_episode_writes_jsonl(self, reset_session_service, temp_logs_dir):
+        """Test that episode log is valid JSONL with required fields."""
         from services.episode_logger import log_episode, Episode
 
         ep = Episode(session_id="test", event_type="test")
         log_episode(ep)
 
         log_path = os.environ["EPISODE_LOG_PATH"]
-        with open(log_path) as f:
-            first_line = f.readline()
-            assert "session_id" in first_line
-            assert "event_type" in first_line
-            assert "retry_count" in first_line
-            assert "timeout_ms" in first_line
+        with open(log_path, encoding="utf-8") as f:
+            row = json.loads(f.readline())
+            assert row["meta"]["session_id"] == "test"
+            assert row["event_type"] == "test"
+            assert "ts" in row
+            assert isinstance(row["ts"], float)
 
     def test_log_user_message(self, reset_session_service, temp_logs_dir):
         """Test logging user message event."""
@@ -230,14 +230,13 @@ class TestEpisodeLogger:
         )
 
         log_path = os.environ["EPISODE_LOG_PATH"]
-        with open(log_path) as f:
-            lines = f.readlines()
-            assert len(lines) == 3  # header + 2 episodes
+        with open(log_path, encoding="utf-8") as f:
+            lines = [ln for ln in f.readlines() if ln.strip()]
+            assert len(lines) == 2
 
     def test_episode_persists_all_fields(self, reset_session_service, temp_logs_dir):
-        """Test that all episode fields are persisted to CSV."""
+        """Test that all episode fields are persisted to JSONL."""
         from services.episode_logger import log_stream_end
-        import csv
 
         log_stream_end(
             session_id="test-session",
@@ -250,14 +249,13 @@ class TestEpisodeLogger:
         )
 
         log_path = os.environ["EPISODE_LOG_PATH"]
-        with open(log_path) as f:
-            reader = csv.DictReader(f)
-            row = next(reader)
-            assert row["session_id"] == "test-session"
+        with open(log_path, encoding="utf-8") as f:
+            row = json.loads(f.readline())
+            assert row["meta"]["session_id"] == "test-session"
             assert row["model"] == "test-model"
-            assert row["input_tokens"] == "100"
-            assert row["output_tokens"] == "200"
-            assert row["latency_ms"] == "2000"
+            assert row["input_tokens"] == 100
+            assert row["output_tokens"] == 200
+            assert row["latency_ms"] == 2000
 
     def test_episode_cost_with_claude(self, reset_session_service, temp_logs_dir):
         """Test cost calculation for Claude models."""

@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
-Lab 9 — compute six observability metrics from episode-log.csv.
+Lab 9 — compute six observability metrics from episode log (JSONL or CSV).
 
 Usage:
   python scripts/metrics_report.py
-  python scripts/metrics_report.py --log Backend/logs/episode-log.csv --write docs/metrics-report.md
+  python scripts/metrics_report.py --log Backend/logs/episode-log.jsonl --write docs/metrics-report.md
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import json
 import os
 import statistics
 from collections import Counter
@@ -35,12 +36,23 @@ def _resolve_log(path: str | None) -> Path:
     env = os.environ.get("EPISODE_LOG_PATH")
     if env:
         return Path(env)
+    jsonl = _REPO / "Backend" / "logs" / "episode-log.jsonl"
+    if jsonl.is_file():
+        return jsonl
     return _REPO / "Backend" / "logs" / "episode-log.csv"
 
 
 def load_rows(log_path: Path) -> list[dict]:
     if not log_path.is_file():
         return []
+    if log_path.suffix.lower() == ".jsonl":
+        rows: list[dict] = []
+        with open(log_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    rows.append(json.loads(line))
+        return rows
     with open(log_path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
@@ -52,8 +64,13 @@ def compute_metrics(rows: list[dict]) -> dict:
 
     latencies = [int(r.get("latency_ms") or 0) for r in llm_rows]
     costs = [float(r.get("cost_usd") or 0) for r in llm_rows]
-    successes = [r.get("success", "True").lower() in ("true", "1") for r in llm_rows]
-    fallbacks = [r.get("fallback_triggered", "").lower() in ("true", "1") for r in llm_rows]
+    def _as_bool(value) -> bool:
+        if isinstance(value, bool):
+            return value
+        return str(value).lower() in ("true", "1")
+
+    successes = [_as_bool(r.get("success", True)) for r in llm_rows]
+    fallbacks = [_as_bool(r.get("fallback_triggered", False)) for r in llm_rows]
     retries = [int(r.get("retry_count") or 0) > 0 for r in llm_rows]
     cache_hits = [int(r.get("cache_read_tokens") or 0) > 0 for r in llm_rows]
 

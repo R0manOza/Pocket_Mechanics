@@ -96,12 +96,23 @@ async def _token_generator(
 
     try:
         if approval_required and not approved:
-            msg = (
-                "This request may involve hands-on repair steps. "
-                "Confirm in the app that you want detailed procedural guidance, then send again "
-                "with repair_steps_approved=true."
+            yield (
+                "data: "
+                + json.dumps(
+                    {
+                        "gate": {
+                            "type": "repair_steps",
+                            "approval_required": True,
+                            "message": (
+                                "This question may involve hands-on repair work. "
+                                "Confirm below if you want step-by-step guidance — "
+                                "always verify with your owner's manual and a qualified mechanic."
+                            ),
+                        }
+                    }
+                )
+                + "\n\n"
             )
-            yield f"data: {json.dumps({'token': msg})}\n\n"
             stream_error = "approval_required"
         else:
             routing = llm_service.get_routing()
@@ -266,8 +277,13 @@ async def stream_chat(body: StreamRequest):
     if not messages:
         messages = [{"role": "system", "content": system}]
     user_content = vision_utils.openrouter_user_content(body.message, validated_images)
-    messages.append({"role": "user", "content": user_content})
-    save_session(body.session_id, messages)
+    # After repair approval, re-run the same turn without duplicating the user message.
+    if body.repair_steps_approved and messages and messages[-1].get("role") == "user":
+        messages[-1] = {"role": "user", "content": user_content}
+        save_session(body.session_id, messages)
+    else:
+        messages.append({"role": "user", "content": user_content})
+        save_session(body.session_id, messages)
 
     timeout_ms = resilience.timeout_ms_from_env()
     agent = initial_state_from_session(

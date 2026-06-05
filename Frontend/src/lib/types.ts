@@ -25,6 +25,14 @@ export interface GenerateResponse {
 export type StreamEvent =
   | { kind: "token"; token: string }
   | {
+      kind: "gate"
+      gate: {
+        type: "repair_steps"
+        approval_required: boolean
+        message: string
+      }
+    }
+  | {
       kind: "usage"
       usage: {
         input_tokens: number
@@ -35,14 +43,34 @@ export type StreamEvent =
         cache_read_tokens?: number
         cache_write_tokens?: number
         fallback_triggered?: boolean
+        approval_required?: boolean
+        approved?: boolean
       }
     }
   | { kind: "error"; message: string }
   | { kind: "done" }
+
+export interface RepairApprovalPending {
+  message: string
+  images?: string[]
+  previewUrl?: string
+}
 
 export type ChatErrorReason = "network" | "policy" | "low_confidence" | "unknown"
 
 export interface ChatError {
   reason: ChatErrorReason
   message: string
+}
+
+export interface AiModelOption {
+  id: string
+  label: string
+  input_usd_per_million: number
+  output_usd_per_million: number
+}
+
+export interface ModelsResponse {
+  default: string
+  models: AiModelOption[]
 }
