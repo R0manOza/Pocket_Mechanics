@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "Backend"
 MCP_DIR = ROOT / "mcp-server"
 LOGS = ROOT / "logs"
-EPISODE_LOG = BACKEND / "logs" / "episode-log.csv"
+EPISODE_LOG = BACKEND / "logs" / "episode-log.jsonl"
 MCP_AUDIT = LOGS / "mcp-audit.jsonl"
 EVIDENCE = ROOT / "docs" / "evidence"
 

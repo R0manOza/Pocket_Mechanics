@@ -23,8 +23,16 @@ STEP_ERROR = "error"
 # Phrases that imply hands-on repair steps — require explicit user acknowledgment in UI
 _HIGH_STAKES_MARKERS = (
     "step by step repair",
+    "step-by-step",
     "how do i replace",
     "how to replace",
+    "how i replace",
+    "replace them",
+    "replace the ",
+    "replace my ",
+    "replace a ",
+    "instructions to replace",
+    "help me with instructions",
     "remove the ",
     "disconnect the battery",
     "jack up",
@@ -32,6 +40,11 @@ _HIGH_STAKES_MARKERS = (
     "torque spec",
     "drain the ",
     "bleed the ",
+    "install the ",
+    "change the headlight",
+    "change the bulb",
+    "replace the bulb",
+    "replace the light",
 )
 
 

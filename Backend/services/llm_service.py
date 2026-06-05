@@ -62,7 +62,7 @@ def build_system_prompt(override: str | None = None) -> str:
         return base
     return f"{base}\n\n{system_prompts.SAFETY_POLICY_BLOCK}"
 DEFAULT_OPENROUTER_FALLBACK_MODELS = [
-    "google/gemma-3-27b-it:free",
+    "qwen/qwen3.5-flash-02-23",
     "meta-llama/llama-4-maverick:free",
 ]
 
@@ -80,7 +80,9 @@ MODEL_PRICING = {
     "anthropic/claude-haiku-4-5-20251001": {"input": 1.00, "output": 5.00},
     "anthropic/claude-sonnet-4-6": {"input": 3.00, "output": 15.00},
     "openai/gpt-4o": {"input": 2.50, "output": 10.00},
-    "openai/gpt-5-nano": {"input": 0.05, "output": 0.40}
+    "openai/gpt-5-nano": {"input": 0.05, "output": 0.40},
+    "qwen/qwen3.5-flash-02-23": {"input": 0.325, "output": 1.95},
+
 }
 
 

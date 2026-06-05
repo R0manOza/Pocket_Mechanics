@@ -1,4 +1,4 @@
-import type { GenerateResponse, StreamEvent } from "./types"
+import type { GenerateResponse, ModelsResponse, StreamEvent } from "./types"
 
 /**
  * Vite inlines `VITE_*` at **build time**. If it is missing during `npm run build` /
@@ -56,6 +56,14 @@ function authHeaders(): Record<string, string> {
     headers["Authorization"] = `Bearer ${BEARER_TOKEN}`
   }
   return headers
+}
+
+export async function fetchModels(signal?: AbortSignal): Promise<ModelsResponse> {
+  const r = await fetch(`${API_BASE_URL}/api/ai/models`, { signal })
+  if (!r.ok) {
+    throw new Error(`Failed to load models (${r.status})`)
+  }
+  return (await r.json()) as ModelsResponse
 }
 
 export async function checkHealth(signal?: AbortSignal): Promise<boolean> {
@@ -130,6 +138,8 @@ export async function* streamChat(args: {
   message: string
   sessionId: string
   images?: string[]
+  model?: string
+  repairStepsApproved?: boolean
   signal?: AbortSignal
 }): AsyncGenerator<StreamEvent, void, void> {
   const body: Record<string, unknown> = {
@@ -137,6 +147,8 @@ export async function* streamChat(args: {
     session_id: args.sessionId,
   }
   if (args.images?.length) body.images = args.images
+  if (args.model) body.model = args.model
+  if (args.repairStepsApproved) body.repair_steps_approved = true
 
   const r = await fetch(`${API_BASE_URL}/api/ai/stream`, {
     method: "POST",
@@ -180,6 +192,18 @@ export async function* streamChat(args: {
         const parsed = JSON.parse(payload) as Record<string, unknown>
         if (typeof parsed.token === "string") {
           yield { kind: "token", token: parsed.token }
+        } else if (parsed.gate && typeof parsed.gate === "object") {
+          const gate = parsed.gate as Record<string, unknown>
+          if (gate.type === "repair_steps") {
+            yield {
+              kind: "gate",
+              gate: {
+                type: "repair_steps",
+                approval_required: Boolean(gate.approval_required),
+                message: String(gate.message ?? ""),
+              },
+            }
+          }
         } else if (parsed.usage && typeof parsed.usage === "object") {
           yield { kind: "usage", usage: parsed.usage as StreamEvent extends { kind: "usage"; usage: infer U } ? U : never }
         } else if (typeof parsed.error === "string") {

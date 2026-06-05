@@ -1,27 +1,77 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { ChatInput } from "../components/ChatInput"
 import { ChatWindow } from "../components/ChatWindow"
 import { ErrorState } from "../components/ErrorState"
+import { ModelSelect } from "../components/ModelSelect"
+import { RepairApprovalBanner } from "../components/RepairApprovalBanner"
+import { fetchModels } from "../lib/api"
+import { saveChatHistory, titleFromMessage } from "../lib/sessionStorage"
+import type { AiModelOption } from "../lib/types"
 import { useSession } from "../hooks/useSession"
 import { useStream } from "../hooks/useStream"
 
 const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
+const MODEL_PREF_KEY = "pocket-mechanics:preferred_model"
+
+const FALLBACK_MODELS: AiModelOption[] = [
+  {
+    id: "google/gemini-2.5-flash",
+    label: "Gemini 2.5 Flash",
+    input_usd_per_million: 0.15,
+    output_usd_per_million: 0.6,
+  },
+  {
+    id: "openai/gpt-5-nano",
+    label: "GPT-5 Nano",
+    input_usd_per_million: 0.05,
+    output_usd_per_million: 0.4,
+  },
+]
 
 export function ChatPage() {
-  const { sessionId, resetSession } = useSession()
+  const { sessionId, sessions, selectSession, startNewSession, touchSession } =
+    useSession()
+  const [model, setModel] = useState(
+    () => localStorage.getItem(MODEL_PREF_KEY) ?? "google/gemini-2.5-flash",
+  )
+  const [models, setModels] = useState<AiModelOption[]>(FALLBACK_MODELS)
+
   const {
     history,
     pendingAssistant,
     isStreaming,
     error,
+    repairApproval,
     send,
+    confirmRepairSteps,
+    dismissRepairApproval,
     retry,
-    clearHistory,
-  } = useStream(sessionId)
+  } = useStream(sessionId, touchSession, model)
+
   const [input, setInput] = useState("")
   const [attachedFile, setAttachedFile] = useState<File | null>(null)
   const [attachedPreviewUrl, setAttachedPreviewUrl] = useState<string | null>(null)
   const [attachError, setAttachError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    fetchModels()
+      .then((res) => {
+        if (res.models.length) setModels(res.models)
+        const preferred = localStorage.getItem(MODEL_PREF_KEY)
+        if (!preferred && res.default) {
+          setModel(res.default)
+        }
+      })
+      .catch(() => {
+        /* keep FALLBACK_MODELS */
+      })
+  }, [])
+
+  function onModelChange(id: string) {
+    setModel(id)
+    localStorage.setItem(MODEL_PREF_KEY, id)
+  }
 
   function onPickFile(file: File) {
     if (!file.type.startsWith("image/")) {
@@ -45,13 +95,10 @@ export function ChatPage() {
     setAttachError(null)
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function onSubmit() {
     const message = input.trim()
     if ((!message && !attachedFile) || isStreaming) return
     setInput("")
-    // Ownership of the preview URL transfers to the history entry — do NOT revoke here.
-    // The URL stays alive until the page unmounts or history is cleared (small accepted leak).
     const attachment =
       attachedFile && attachedPreviewUrl
         ? { file: attachedFile, previewUrl: attachedPreviewUrl }
@@ -62,9 +109,27 @@ export function ChatPage() {
     await send(message, attachment)
   }
 
-  function onReset() {
-    clearHistory()
-    resetSession()
+  function persistCurrentSession() {
+    if (history.length === 0) return
+    saveChatHistory(sessionId, history)
+    const firstUser = history.find((m) => m.role === "user")
+    if (firstUser) {
+      touchSession(titleFromMessage(firstUser.content))
+    }
+  }
+
+  function onNewChat() {
+    persistCurrentSession()
+    const firstUser = history.find((m) => m.role === "user")
+    const title = firstUser ? titleFromMessage(firstUser.content) : undefined
+    startNewSession(title)
+    // New sessionId triggers useStream to load empty history — do not clear old session storage.
+  }
+
+  function onSelectSession(id: string) {
+    if (id === sessionId || isStreaming) return
+    persistCurrentSession()
+    selectSession(id)
   }
 
   const canSubmit = (input.trim().length > 0 || !!attachedFile) && !isStreaming
@@ -79,7 +144,7 @@ export function ChatPage() {
             </h2>
             <button
               type="button"
-              onClick={onReset}
+              onClick={onNewChat}
               aria-label="Start a new chat"
               title="New chat"
               className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-brand-border bg-brand-card text-brand-text-muted transition-colors hover:cursor-pointer hover:border-brand-accent hover:bg-brand-card-soft hover:text-brand-text"
@@ -102,63 +167,137 @@ export function ChatPage() {
             </button>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-2">
-            <div className="rounded-lg bg-gradient-to-br from-brand-card-soft via-brand-card-soft to-brand-glow/30 px-2.5 py-2 2xl:px-3 2xl:py-2.5 shadow-inner">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-brand-accent shadow-[0_0_8px_rgba(34,197,94,0.7)]" />
-                <p className="text-sm font-medium text-brand-text">Active chat</p>
-              </div>
-              {sessionId && (
-                <p className="mt-1 truncate pl-4 text-xs text-brand-text-muted">
-                  <code>{sessionId.slice(0, 8)}…</code>
-                </p>
-              )}
-            </div>
-            <p className="mt-6 px-2 text-center text-xs text-brand-text-muted/60">
-              Past sessions will appear here.
-            </p>
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            {sessions.length === 0 ? (
+              <p className="px-2 py-4 text-center text-xs text-brand-text-muted/60">
+                Chats are saved in this browser. Use + to start a new chat and
+                keep the current one in this list.
+              </p>
+            ) : (
+              sessions.map((s) => {
+                const active = s.id === sessionId
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => onSelectSession(s.id)}
+                    disabled={isStreaming && !active}
+                    className={`w-full rounded-lg px-2.5 py-2 text-left text-sm transition-colors disabled:opacity-50 ${
+                      active
+                        ? "bg-gradient-to-br from-brand-card-soft via-brand-card-soft to-brand-glow/30 text-brand-text"
+                        : "text-brand-text-muted hover:bg-brand-card-soft hover:text-brand-text"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {active && (
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-brand-accent shadow-[0_0_8px_rgba(34,197,94,0.7)]" />
+                      )}
+                      <p className="truncate font-medium">{s.title}</p>
+                    </div>
+                    <p className="mt-0.5 pl-4 text-xs opacity-70">
+                      {new Date(s.updatedAt).toLocaleDateString()}
+                    </p>
+                  </button>
+                )
+              })
+            )}
           </div>
         </div>
       </aside>
-   <div className="flex h-full w-full max-w-4xl 2xl:max-w-5xl flex-col gap-2.5 py-3 2xl:gap-3 2xl:py-4">
-      <div className="rounded-2xl border border-brand-border bg-brand-card/40 backdrop-blur h-full">
-        <ChatWindow
-          history={history}
-          pendingAssistant={pendingAssistant}
-          isStreaming={isStreaming}
-        />
-      </div>
 
-      {error && (
-        <ErrorState message={error.message} onRetry={retry} retryLabel="Try Again" />
-      )}
-
-      {attachError && (
-        <p className="text-xs text-brand-primary">{attachError}</p>
-      )}
-
-      {attachedPreviewUrl && attachedFile && (
-        <div className="flex items-center gap-3 rounded-xl border border-brand-border bg-brand-card/60 backdrop-blur p-2">
-          <img
-            src={attachedPreviewUrl}
-            alt="Selected attachment"
-            className="h-12 w-16 rounded-lg object-cover"
+      <div className="flex h-full w-full max-w-4xl 2xl:max-w-5xl flex-col gap-2.5 py-3 2xl:gap-3 2xl:py-4">
+        <div className="flex items-center justify-end px-1">
+          <ModelSelect
+            models={models}
+            value={model}
+            onChange={onModelChange}
+            disabled={isStreaming}
           />
-          <div className="flex-1 min-w-0 text-xs text-brand-text-muted">
-            <p className="truncate font-medium text-brand-text">{attachedFile.name}</p>
-            <p>{(attachedFile.size / 1024).toFixed(0)} KB · {attachedFile.type}</p>
+        </div>
+
+        <div className="rounded-2xl border border-brand-border bg-brand-card/40 backdrop-blur h-full min-h-0 flex-1">
+          <ChatWindow
+            history={history}
+            pendingAssistant={pendingAssistant}
+            isStreaming={isStreaming}
+          />
+        </div>
+
+        {repairApproval && (
+          <RepairApprovalBanner
+            onConfirm={() => void confirmRepairSteps()}
+            onCancel={dismissRepairApproval}
+            busy={isStreaming}
+          />
+        )}
+
+        {error && (
+          <ErrorState message={error.message} onRetry={retry} retryLabel="Try Again" />
+        )}
+
+        {attachError && (
+          <p className="text-xs text-brand-primary">{attachError}</p>
+        )}
+
+        {attachedPreviewUrl && attachedFile && (
+          <div className="flex items-center gap-3 rounded-xl border border-brand-border bg-brand-card/60 backdrop-blur p-2">
+            <img
+              src={attachedPreviewUrl}
+              alt="Selected attachment"
+              className="h-12 w-16 rounded-lg object-cover"
+            />
+            <div className="flex-1 min-w-0 text-xs text-brand-text-muted">
+              <p className="truncate font-medium text-brand-text">{attachedFile.name}</p>
+              <p>
+                {(attachedFile.size / 1024).toFixed(0)} KB · {attachedFile.type}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={clearAttachment}
+              aria-label="Remove attachment"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-card px-3 py-2 text-xs font-medium text-brand-text-muted transition-colors hover:cursor-pointer hover:border-brand-accent hover:bg-brand-card-soft hover:text-brand-text"
+            >
+              Remove
+            </button>
           </div>
+        )}
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            void onSubmit()
+          }}
+          className="flex items-end gap-2"
+        >
+          <ChatInput
+            value={input}
+            onChange={setInput}
+            onSubmit={() => void onSubmit()}
+            disabled={isStreaming}
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) onPickFile(file)
+              e.target.value = ""
+            }}
+          />
           <button
             type="button"
-            onClick={clearAttachment}
-            aria-label="Remove attachment"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-card px-3 py-2 text-xs font-medium text-brand-text-muted transition-colors hover:cursor-pointer hover:border-brand-accent hover:bg-brand-card-soft hover:text-brand-text"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isStreaming}
+            aria-label="Attach an image"
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-brand-border bg-brand-card px-3 text-brand-text-muted shadow-sm transition-colors hover:cursor-pointer hover:border-brand-accent hover:bg-brand-card-soft hover:text-brand-text disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Remove
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
+              width="22"
+              height="22"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -167,94 +306,50 @@ export function ChatPage() {
               strokeLinejoin="round"
               aria-hidden="true"
             >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
             </svg>
           </button>
-        </div>
-      )}
-
-      <form onSubmit={onSubmit} className="flex items-center gap-2">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="What does the check engine light mean?"
-          className="flex-1 rounded-xl border border-brand-border bg-brand-card px-3.5 py-2.5 2xl:px-4 2xl:py-3 text-sm text-brand-text placeholder:text-brand-text-muted/60 outline-none transition-colors focus:border-brand-accent disabled:opacity-60"
-          disabled={isStreaming}
-        />
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) onPickFile(file)
-            e.target.value = ""
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isStreaming}
-          aria-label="Attach an image"
-          className="inline-flex items-center justify-center rounded-xl border border-brand-border bg-brand-card px-3 2xl:px-4 h-full text-brand-text-muted shadow-sm transition-colors hover:cursor-pointer hover:border-brand-accent hover:bg-brand-card-soft hover:text-brand-text disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            aria-label={isStreaming ? "Sending message" : "Send message"}
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-brand-accent px-5 text-white shadow-sm transition-colors hover:cursor-pointer hover:bg-brand-glow-soft disabled:cursor-not-allowed disabled:bg-brand-card-soft disabled:text-brand-text-muted"
           >
-            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-          </svg>
-        </button>
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          aria-label={isStreaming ? "Sending message" : "Send message"}
-          className="inline-flex items-center justify-center rounded-xl bg-brand-accent px-5 2xl:px-6 h-full text-white shadow-sm transition-colors hover:cursor-pointer hover:bg-brand-glow-soft disabled:cursor-not-allowed disabled:bg-brand-card-soft disabled:text-brand-text-muted disabled:shadow-none disabled:hover:bg-brand-card-soft disabled:hover:text-brand-text-muted"
-        >
-          {isStreaming ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="animate-spin"
-              aria-hidden="true"
-            >
-              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-            </svg>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="5 5 14 14"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M6.99811 10.2467L7.43298 11.0077C7.70983 11.4922 7.84825 11.7344 7.84825 12C7.84825 12.2656 7.70983 12.5078 7.43299 12.9923L7.43298 12.9923L6.99811 13.7533C5.75981 15.9203 5.14066 17.0039 5.62348 17.5412C6.1063 18.0785 7.24961 17.5783 9.53623 16.5779L15.8119 13.8323C17.6074 13.0468 18.5051 12.654 18.5051 12C18.5051 11.346 17.6074 10.9532 15.8119 10.1677L9.53624 7.4221C7.24962 6.42171 6.1063 5.92151 5.62348 6.45883C5.14066 6.99615 5.75981 8.07966 6.99811 10.2467Z"
-                fill="currentColor"
-              />
-            </svg>
-          )}
-        </button>
-      </form>
-    </div>
+            {isStreaming ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="animate-spin"
+                aria-hidden="true"
+              >
+                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M6.99811 10.2467L7.43298 11.0077C7.70983 11.4922 7.84825 11.7344 7.84825 12C7.84825 12.2656 7.70983 12.5078 7.43299 12.9923L6.99811 13.7533C5.75981 15.9203 5.14066 17.0039 5.62348 17.5412C6.1063 18.0785 7.24961 17.5783 9.53623 16.5779L15.8119 13.8323C17.6074 13.0468 18.5051 12.654 18.5051 12C18.5051 11.346 17.6074 10.9532 15.8119 10.1677L9.53624 7.4221C7.24962 6.42171 6.1063 5.92151 5.62348 6.45883C5.14066 6.99615 5.75981 8.07966 6.99811 10.2467Z"
+                  fill="currentColor"
+                />
+              </svg>
+            )}
+          </button>
+        </form>
+        <p className="text-center text-[10px] text-brand-text-muted/50">
+          Enter to send · Shift+Enter for a new line
+        </p>
+      </div>
     </div>
   )
 }

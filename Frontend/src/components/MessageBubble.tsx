@@ -31,7 +31,11 @@ export function MessageBubble({ role, content, streaming = false, imageUrl }: Pr
           <div className="whitespace-pre-wrap px-4 py-3">
             {content}
             {streaming && (
-              <span className="ml-1 inline-block h-2 w-2 animate-pulse rounded-full bg-brand-accent align-middle" />
+              <span
+                className="ml-0.5 inline-block w-0.5 animate-pulse bg-brand-accent align-middle"
+                style={{ height: "1.1em" }}
+                aria-hidden
+              />
             )}
           </div>
         )}

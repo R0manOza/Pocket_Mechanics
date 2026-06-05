@@ -57,7 +57,7 @@ def temp_logs_dir(tmp_path):
     log_dir = tmp_path / "logs"
     log_dir.mkdir()
     os.environ["COST_LOG_PATH"] = str(log_dir / "cost-log.csv")
-    os.environ["EPISODE_LOG_PATH"] = str(log_dir / "episode-log.csv")
+    os.environ["EPISODE_LOG_PATH"] = str(log_dir / "episode-log.jsonl")
     yield log_dir
     # Cleanup
     for key in ["COST_LOG_PATH", "EPISODE_LOG_PATH"]:

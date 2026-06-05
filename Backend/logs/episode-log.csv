@@ -138,3 +138,15 @@ audit_evidence,llm_call,ep_d22b091eddcd,2026-05-21T15:47:11.391917+00:00,google/
 mcp,mcp_tool_call,ep_8a0a72c00baa,2026-05-21T15:47:11.392814+00:00,,ask_pocket_mechanics_tip,,33d779928fe92679,ok,,,0,0,0,0,,,42,False,False,True,0.0,,0,
 mcp,mcp_tool_call,ep_347eb04f45a9,2026-05-21T15:47:12.174656+00:00,,ask_pocket_mechanics_tip,,9c82fcd2a1d643ec,auth_failed,,,0,0,0,0,,,1,False,False,False,0.0,unauthorized,0,
 mcp,mcp_tool_call,ep_8295132e1f60,2026-05-21T15:47:12.176619+00:00,,ask_pocket_mechanics_tip,,a0c7e4086d2252c6,validation_failed,,,0,0,0,0,,,1,False,False,False,0.0,invalid_input,0,
+8678d48f-6a62-44ea-934e-d2745b7bbc04,user_message,ep_b7a13f311323,2026-06-05T05:49:38.596363+00:00,,,,,,,,0,0,0,0,,,0,False,False,True,0.0,,0,
+8678d48f-6a62-44ea-934e-d2745b7bbc04,stream_end,ep_199fc84119ec,2026-06-05T05:49:38.599813+00:00,openai/gpt-5-nano,,openai,,,,,0,0,0,0,1780638578599,1780638578599,0,False,False,False,0.0,approval_required,0,30000
+8678d48f-6a62-44ea-934e-d2745b7bbc04,user_message,ep_de3f56f04846,2026-06-05T05:52:56.283433+00:00,,,,,,,,0,0,0,0,,,0,False,False,True,0.0,,0,
+8678d48f-6a62-44ea-934e-d2745b7bbc04,stream_end,ep_dfd9f879c561,2026-06-05T05:52:56.285630+00:00,openai/gpt-5-nano,,openai,,,,,0,0,0,0,1780638776285,1780638776285,0,False,False,False,0.0,approval_required,0,30000
+8678d48f-6a62-44ea-934e-d2745b7bbc04,user_message,ep_b449e042dccf,2026-06-05T05:53:10.720512+00:00,,,,,,,,0,0,0,0,,,0,False,False,True,0.0,,0,
+8678d48f-6a62-44ea-934e-d2745b7bbc04,stream_end,ep_a5624bdecd98,2026-06-05T05:53:37.528051+00:00,openai/gpt-5-nano,,openai,,,,,862,2731,0,0,1780638790722,1780638817527,26805,False,False,True,0.0011355,,0,30000
+8678d48f-6a62-44ea-934e-d2745b7bbc04,user_message,ep_5317dbafe654,2026-06-05T05:54:21.052222+00:00,,,,,,,,0,0,0,0,,,0,False,False,True,0.0,,0,
+8678d48f-6a62-44ea-934e-d2745b7bbc04,stream_end,ep_9b03660936b3,2026-06-05T05:54:24.448742+00:00,google/gemini-2.5-flash,,google,,,,,2872,131,0,0,1780638861054,1780638864448,3394,False,False,True,0.0005094,,0,30000
+fec13ee5-c604-4921-acdc-b1c43684f19d,user_message,ep_e57b2901524f,2026-06-05T05:58:20.001491+00:00,,,,,,,,0,0,0,0,,,0,False,False,True,0.0,,0,
+fec13ee5-c604-4921-acdc-b1c43684f19d,stream_end,ep_5ef71b139dd5,2026-06-05T05:58:20.993699+00:00,google/gemini-2.5-flash,,google,,,,,323,21,0,0,1780639100004,1780639100993,989,False,False,True,6.104999999999999e-05,,0,30000
+677db6e7-1c57-4099-b7b7-715ea849e7f1,user_message,ep_24761937ad18,2026-06-05T05:58:26.689805+00:00,,,,,,,,0,0,0,0,,,0,False,False,True,0.0,,0,
+677db6e7-1c57-4099-b7b7-715ea849e7f1,stream_end,ep_baa619ee094a,2026-06-05T05:58:27.372478+00:00,google/gemini-2.5-flash,,google,,,,,323,21,0,0,1780639106693,1780639107372,679,False,False,True,6.104999999999999e-05,,0,30000
