@@ -10,3 +10,9 @@ venv/
 .DS_Store
 .vercel
 .env*.local
+
+# Locust generated output (keep results_stats.csv as evidence)
+load/results_stats_history.csv
+load/results_failures.csv
+load/results_exceptions.csv
+load/__pycache__/
