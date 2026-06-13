@@ -6,11 +6,14 @@ Capstone project (**CS-AI-2025 / Spring 2026**): a web app that helps **non-mech
 
 | Surface | URL |
 |---------|-----|
-| **Frontend (Vercel)** | https://pocket-mechanics.vercel.app *(replace with current production URL)* |
-| **Backend API (Render)** | https://pocket-mechanics-api.onrender.com *(replace with current production URL; see `/docs` for OpenAPI)* |
-| **Health probe** | `GET <backend>/health` |
+| **Frontend (live)** | https://pocket-mechanics.vercel.app/ |
+| **Backend API (Render)** | https://pocket-mechanics.onrender.com/ (`/docs` for OpenAPI, `/health` for liveness) |
+| **2-min demo video** | _<fill in link once recorded>_ |
+| **60-sec launch video** | https://drive.google.com/file/d/1tD41XDU9zPSjwKwZX26MW1_V0zaScEvj/view?usp=drive_link |
+| **Presentation** | https://docs.google.com/presentation/d/1cBYYpPlSj6ee7Sv_kr2Mx4K6kHs5vqKN/edit?usp=drive_link |
 
 > See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the step-by-step deployment runbook.
+> **Note:** the Drive video and slides must be shared as "Anyone with the link → Viewer" to be publicly accessible.
 
 ## Features
 

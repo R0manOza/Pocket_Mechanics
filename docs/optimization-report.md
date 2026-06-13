@@ -7,16 +7,39 @@
 
 ---
 
-## 1. What We Optimised
+## 0. Primary optimisation — model selection (completed, with before/after numbers)
 
-> **Update (post-freeze prep):** the original caching benchmark targeted
-> `anthropic/claude-haiku-4-5-20251001`, which our OpenRouter account no longer
-> serves (NotFound). Prompt caching is **implemented** (`cache_control: ephemeral`
-> on the stable system prefix for Anthropic models, see `llm_service._openrouter_system_content`),
-> but the cache A/B in §3 was **not completed** because no Anthropic model is
-> currently available on our account. The cross-vendor cost/latency comparison we
-> *did* complete is in `eval/model-comparison.json` (Gemini vs GPT-5.5 vs DeepSeek),
-> and the production fallback chain is `openai/gpt-5.5 → deepseek/deepseek-v4-flash`.
+**Technique:** model selection / cascading (one of the three valid Lab 8/9
+techniques — model cascading, caching, or batching). We benchmarked three models
+across the same five questions through `POST /api/ai/generate` and chose the
+cheapest-and-fastest as the production default. Full data: `eval/model-comparison.json`.
+
+| Model | Avg latency | Avg cost / query |
+|-------|-------------|------------------|
+| **google/gemini-2.5-flash** (chosen default) | **1,998 ms** | **$0.00011** |
+| deepseek/deepseek-v4-flash | 3,519 ms | $0.000034 |
+| openai/gpt-5.5 | 3,749 ms | $0.0031 |
+
+**Result:** choosing Gemini 2.5 Flash over GPT-5.5 is **~28× cheaper per query**
+($0.00011 vs $0.0031) **and ~1.9× faster** (1,998 ms vs 3,749 ms). At ~1,000
+queries/day that is roughly **$0.11/day vs $3.10/day** — a >95% cost reduction
+versus the premium-tier alternative, with lower latency, not higher. DeepSeek is
+marginally cheaper still but ~1.8× slower, so it sits in the fallback chain rather
+than as the default.
+
+**This is the optimisation we completed end-to-end with real before/after numbers.**
+Prompt caching (below) is implemented but its A/B was not finished — see the note.
+
+> **Caching A/B not completed (honest note):** the original caching benchmark
+> targeted `anthropic/claude-haiku-4-5-20251001`, which our OpenRouter account no
+> longer serves (NotFound), and no other Anthropic model is available on the
+> account. Prompt caching is **implemented** (`cache_control: ephemeral` on the
+> stable system prefix for Anthropic models — `llm_service._openrouter_system_content`),
+> but §3 below could not be measured. We did not fabricate cache numbers.
+
+---
+
+## 1. What We Optimised (caching — implemented, A/B incomplete)
 
 **Target call:** `POST /api/ai/generate` — `Backend/services/llm_service.py`
 
