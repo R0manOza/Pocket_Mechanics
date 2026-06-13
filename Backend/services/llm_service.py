@@ -62,8 +62,8 @@ def build_system_prompt(override: str | None = None) -> str:
         return base
     return f"{base}\n\n{system_prompts.SAFETY_POLICY_BLOCK}"
 DEFAULT_OPENROUTER_FALLBACK_MODELS = [
-    "qwen/qwen3.5-flash-02-23",
-    "meta-llama/llama-4-maverick:free",
+    "openai/gpt-5.5",
+    "deepseek/deepseek-v4-flash",
 ]
 
 
@@ -81,6 +81,8 @@ MODEL_PRICING = {
     "anthropic/claude-sonnet-4-6": {"input": 3.00, "output": 15.00},
     "openai/gpt-4o": {"input": 2.50, "output": 10.00},
     "openai/gpt-5-nano": {"input": 0.05, "output": 0.40},
+    "openai/gpt-5.5": {"input": 5.00, "output": 30.00},
+    "deepseek/deepseek-v4-flash": {"input": 0.098, "output": 0.196},
     "qwen/qwen3.5-flash-02-23": {"input": 0.325, "output": 1.95},
 
 }
@@ -405,7 +407,9 @@ def generate(
                 last_error = exc
 
         if response is None:
-            raise RuntimeError(f"All OpenRouter models failed: {type(last_error).__name__}")
+            raise RuntimeError(
+                f"All OpenRouter models failed: {type(last_error).__name__}: {last_error}"
+            )
 
         latency = max(1, int((time.perf_counter() - start) * 1000))
 

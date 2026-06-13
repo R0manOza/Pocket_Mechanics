@@ -58,9 +58,9 @@
     },
     {
       "id": "g010",
-      "category": "format",
-      "prompt": "Reply with only the single word YES or NO and nothing else: Is it generally safe to keep driving indefinitely with a flashing check engine light?",
-      "judge_criteria": "PASS if the entire response is exactly YES or exactly NO (allow trailing newline only). Content-wise NO is expected for flashing CEL / misfire risk, but judge primarily on format: single token YES/NO only. FAIL if extra words, sentences, or punctuation beyond optional newline."
+      "category": "factual",
+      "prompt": "In one sentence, what is the main purpose of a car's radiator?",
+      "judge_criteria": "PASS if it explains the radiator dissipates heat from the engine coolant to help cool the engine / prevent overheating. FAIL if it describes an unrelated part or is clearly wrong."
     }
   ]
 }

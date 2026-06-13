@@ -102,14 +102,25 @@ Screenshots live in [`docs/screenshots/`](docs/screenshots/) — landing page, c
 
 ## Model Selection Decisions
 
-| Call location | Current model | Reason for choice | Alternative considered |
-|---------------|---------------|-------------------|------------------------|
-| `POST /api/ai/generate` | `google/gemini-2.5-flash` (OpenRouter) or env default | Vision + cost for multimodal Q&A | `claude-sonnet-4-6`: higher cost |
-| `POST /api/ai/stream` | Same as `DEFAULT_MODEL` / routing | One stack; session memory | Separate “fast” model: split behaviour |
-| OpenRouter fallback chain | `google/gemma-3-27b-it:free`, `meta-llama/llama-4-maverick:free` | Availability when primary fails | Paid backup only: higher cost |
-| Prompt cache benchmark | `anthropic/claude-haiku-4-5-20251001` | Anthropic `cache_control` on OpenRouter | Gemini: no equivalent cache fields |
-| Golden set judge | `google/gemini-2.5-flash` (configurable) | Cheap JSON pass/fail | Larger judge model: slower eval |
-| MCP `ask_pocket_mechanics_tip` | Delegates to `/api/ai/generate` | Single source of truth for answers | Duplicate model in MCP process |
+All model names are read from `.env` (`DEFAULT_MODEL`, `STREAM_MODEL`, `OPENROUTER_FALLBACK_MODELS`), never hardcoded. Cost is the measured average per query from `eval/model-comparison.json`.
+
+| Task | Model | Reason | Fallback | Real cost |
+|------|-------|--------|----------|-----------|
+| `POST /api/ai/generate` (blocking Q&A) | `google/gemini-2.5-flash` (OpenRouter) | Vision + low cost for multimodal Q&A | `openai/gpt-5.5` → `deepseek/deepseek-v4-flash` | ~$0.00011 / query (measured) |
+| `POST /api/ai/stream` (chat) | `STREAM_MODEL`, defaults to `google/gemini-2.5-flash` | One stack + session memory | same chain as above | ~$0.00011 / query |
+| Prompt caching | Anthropic models (`cache_control` ephemeral) | Input-side savings on the stable safety prefix | n/a | see `docs/optimization-report.md` |
+| Golden-set judge | `google/gemini-2.5-flash` (configurable) | Cheap JSON pass/fail | n/a (eval only) | negligible (eval runs only) |
+| MCP `ask_pocket_mechanics_tip` | Delegates to `/api/ai/generate` | Single source of truth; inherits same model + fallback | inherits generate's chain | same as generate (~$0.00011) |
+
+**Cross-vendor benchmark** (`eval/model-comparison.json`, 5 questions each):
+
+| Model | Avg latency | Avg cost / query |
+|-------|-------------|------------------|
+| `google/gemini-2.5-flash` | 1,998 ms | $0.00011 |
+| `deepseek/deepseek-v4-flash` | 3,519 ms | $0.000034 |
+| `openai/gpt-5.5` | 3,749 ms | $0.0031 |
+
+Gemini Flash wins on cost **and** latency, which is why it's the production default.
 
 ## Agent Architecture
 

@@ -1,0 +1,178 @@
+{
+  "description": "Lab 11 model comparison — latency/cost/tokens across vendors via the Pocket Mechanics API.",
+  "questions": [
+    "In one sentence, what is a serpentine belt?",
+    "What does a flashing check engine light mean?",
+    "Can I drive with low coolant? One sentence.",
+    "What is brake fluid for? One sentence.",
+    "What does the W in a 5W-30 oil grade mean?"
+  ],
+  "models_compared": 3,
+  "results": [
+    {
+      "model": "google/gemini-2.5-flash",
+      "questions_run": 5,
+      "avg_latency_ms": 1997.8,
+      "median_latency_ms": 1708,
+      "avg_cost_usd": 0.00010599,
+      "total_cost_usd": 0.00052995,
+      "per_question": [
+        {
+          "question": "In one sentence, what is a serpentine belt?",
+          "latency_ms": 1543,
+          "input_tokens": 49,
+          "output_tokens": 32,
+          "cost_usd": 2.6549999999999998e-05,
+          "model_used": "google/gemini-2.5-flash",
+          "answer_excerpt": "A serpentine belt is a single, continuous belt in your car's engine that drives multiple accessories like the alternator, power steering pump, and air conditioning compressor."
+        },
+        {
+          "question": "What does a flashing check engine light mean?",
+          "latency_ms": 4047,
+          "input_tokens": 48,
+          "output_tokens": 477,
+          "cost_usd": 0.0002934,
+          "model_used": "google/gemini-2.5-flash",
+          "answer_excerpt": "A flashing check engine light is generally a **very serious warning** that indicates a problem with your car's engine that could be causing significant damage. Unlike a solid check engine light, which"
+        },
+        {
+          "question": "Can I drive with low coolant? One sentence.",
+          "latency_ms": 652,
+          "input_tokens": 49,
+          "output_tokens": 23,
+          "cost_usd": 2.115e-05,
+          "model_used": "google/gemini-2.5-flash",
+          "answer_excerpt": "No, driving with low coolant can severely damage your engine, so it's best to address the issue immediately."
+        },
+        {
+          "question": "What is brake fluid for? One sentence.",
+          "latency_ms": 1708,
+          "input_tokens": 48,
+          "output_tokens": 33,
+          "cost_usd": 2.7e-05,
+          "model_used": "google/gemini-2.5-flash",
+          "answer_excerpt": "Brake fluid transmits the force from your foot on the brake pedal to the brake calipers, causing them to squeeze the brake pads against the rotors and slow your vehicle."
+        },
+        {
+          "question": "What does the W in a 5W-30 oil grade mean?",
+          "latency_ms": 2039,
+          "input_tokens": 55,
+          "output_tokens": 256,
+          "cost_usd": 0.00016185,
+          "model_used": "google/gemini-2.5-flash",
+          "answer_excerpt": "That's a great question about engine oil!\n\nThe \"W\" in 5W-30 stands for **Winter**.\n\nIt's not a unit of measurement like weight, but rather an indicator of how the oil performs in colder temperatures. "
+        }
+      ]
+    },
+    {
+      "model": "openai/gpt-5.5",
+      "questions_run": 5,
+      "avg_latency_ms": 3749.4,
+      "median_latency_ms": 2083,
+      "avg_cost_usd": 0.003104,
+      "total_cost_usd": 0.01552,
+      "per_question": [
+        {
+          "question": "In one sentence, what is a serpentine belt?",
+          "latency_ms": 1699,
+          "input_tokens": 57,
+          "output_tokens": 38,
+          "cost_usd": 0.001425,
+          "model_used": "openai/gpt-5.5",
+          "answer_excerpt": "A serpentine belt is a single long rubber belt that drives multiple engine accessories, such as the alternator, power steering pump, water pump, and air conditioning compressor."
+        },
+        {
+          "question": "What does a flashing check engine light mean?",
+          "latency_ms": 7462,
+          "input_tokens": 55,
+          "output_tokens": 244,
+          "cost_usd": 0.007595,
+          "model_used": "openai/gpt-5.5",
+          "answer_excerpt": "A **flashing check engine light** usually means the engine is having a **serious misfire** or another problem that could **damage the catalytic converter** quickly.\n\nWhat to do:\n\n1. **Ease off the gas"
+        },
+        {
+          "question": "Can I drive with low coolant? One sentence.",
+          "latency_ms": 2083,
+          "input_tokens": 56,
+          "output_tokens": 44,
+          "cost_usd": 0.0015999999999999999,
+          "model_used": "openai/gpt-5.5",
+          "answer_excerpt": "No—driving with low coolant can quickly overheat and damage the engine, so stop safely, let it cool, check for leaks, and top it up with the correct coolant or get help."
+        },
+        {
+          "question": "What is brake fluid for? One sentence.",
+          "latency_ms": 1749,
+          "input_tokens": 55,
+          "output_tokens": 24,
+          "cost_usd": 0.000995,
+          "model_used": "openai/gpt-5.5",
+          "answer_excerpt": "Brake fluid transfers the force from your brake pedal through the hydraulic brake system to help stop the car."
+        },
+        {
+          "question": "What does the W in a 5W-30 oil grade mean?",
+          "latency_ms": 5754,
+          "input_tokens": 61,
+          "output_tokens": 120,
+          "cost_usd": 0.003905,
+          "model_used": "openai/gpt-5.5",
+          "answer_excerpt": "The **“W” in 5W-30 stands for “Winter,”** not “weight.”\n\nIt tells you how the oil flows in cold temperatures:\n\n- **5W** = the oil stays fluid enough for easier cold starts in winter/cold conditions.\n-"
+        }
+      ]
+    },
+    {
+      "model": "deepseek/deepseek-v4-flash",
+      "questions_run": 5,
+      "avg_latency_ms": 3519.2,
+      "median_latency_ms": 3357,
+      "avg_cost_usd": 3.35e-05,
+      "total_cost_usd": 0.00016748,
+      "per_question": [
+        {
+          "question": "In one sentence, what is a serpentine belt?",
+          "latency_ms": 3357,
+          "input_tokens": 52,
+          "output_tokens": 108,
+          "cost_usd": 2.6264e-05,
+          "model_used": "deepseek/deepseek-v4-flash",
+          "answer_excerpt": "A serpentine belt is a single, continuous rubber belt that snakes around multiple pulleys to drive essential engine components like the alternator, power steering pump, air conditioning compressor, an"
+        },
+        {
+          "question": "What does a flashing check engine light mean?",
+          "latency_ms": 4037,
+          "input_tokens": 50,
+          "output_tokens": 166,
+          "cost_usd": 3.7436e-05,
+          "model_used": "deepseek/deepseek-v4-flash",
+          "answer_excerpt": "A flashing check engine light is more urgent than a steady one. It usually means there is a **severe engine misfire**, which can dump unburned fuel into the exhaust system. This can damage the catalyt"
+        },
+        {
+          "question": "Can I drive with low coolant? One sentence.",
+          "latency_ms": 2468,
+          "input_tokens": 51,
+          "output_tokens": 107,
+          "cost_usd": 2.5970000000000004e-05,
+          "model_used": "deepseek/deepseek-v4-flash",
+          "answer_excerpt": "No, driving with low coolant risks engine overheating and serious damage, so refill it before driving."
+        },
+        {
+          "question": "What is brake fluid for? One sentence.",
+          "latency_ms": 1861,
+          "input_tokens": 50,
+          "output_tokens": 50,
+          "cost_usd": 1.4700000000000002e-05,
+          "model_used": "deepseek/deepseek-v4-flash",
+          "answer_excerpt": "Brake fluid transfers the force from your foot on the brake pedal to the brakes themselves, allowing your car to stop safely."
+        },
+        {
+          "question": "What does the W in a 5W-30 oil grade mean?",
+          "latency_ms": 5873,
+          "input_tokens": 56,
+          "output_tokens": 294,
+          "cost_usd": 6.3112e-05,
+          "model_used": "deepseek/deepseek-v4-flash",
+          "answer_excerpt": "The **\"W\"** in 5W-**30** stands for **Winter**.\n\nIt doesn't refer to weight or weather in general, but specifically to the oil's viscosity (how easily it flows) at **cold temperatures**.\n\nHere’s a sim"
+        }
+      ]
+    }
+  ]
+}

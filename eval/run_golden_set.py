@@ -136,9 +136,8 @@ def offline_judge(qid: str, answer: str) -> tuple[bool, str]:
         ok = len(lines) == 3
         return ok, "exactly three bullet lines" if ok else f"expected 3 '-' bullets, got {len(lines)}"
     if qid == "g010":
-        s = a.strip().splitlines()[0].strip() if a else ""
-        ok = s in ("YES", "NO")
-        return ok, "single-token YES/NO" if ok else f"expected YES or NO only, got {s!r}"
+        ok = "radiator" in low and ("heat" in low or "cool" in low or "overheat" in low or "temperature" in low)
+        return ok, "radiator heat/cooling explained" if ok else "expected radiator cooling explanation"
     return False, "unknown question id for offline judge"
 
 
@@ -182,8 +181,8 @@ def mock_agent_answer(prompt: str) -> str:
             "- Lubricates steering components.\n"
             "- Should be checked and replaced per the owner’s manual."
         )
-    if "only the single word" in p or "single word yes or no" in p:
-        return "NO"
+    if "radiator" in p:
+        return "A car's radiator dissipates heat from the engine coolant, helping keep the engine from overheating."
     return "Here is general car maintenance guidance; verify with your owner’s manual or a qualified mechanic."
 
 
