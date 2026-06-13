@@ -9,9 +9,18 @@
 
 ## 1. What We Optimised
 
+> **Update (post-freeze prep):** the original caching benchmark targeted
+> `anthropic/claude-haiku-4-5-20251001`, which our OpenRouter account no longer
+> serves (NotFound). Prompt caching is **implemented** (`cache_control: ephemeral`
+> on the stable system prefix for Anthropic models, see `llm_service._openrouter_system_content`),
+> but the cache A/B in §3 was **not completed** because no Anthropic model is
+> currently available on our account. The cross-vendor cost/latency comparison we
+> *did* complete is in `eval/model-comparison.json` (Gemini vs GPT-5.5 vs DeepSeek),
+> and the production fallback chain is `openai/gpt-5.5 → deepseek/deepseek-v4-flash`.
+
 **Target call:** `POST /api/ai/generate` — `Backend/services/llm_service.py`
 
-**Model:** OpenRouter `google/gemini-2.5-flash` (production default). **Caching benchmark model:** `anthropic/claude-haiku-4-5-20251001` (Anthropic `cache_control` via OpenRouter).
+**Model:** OpenRouter `google/gemini-2.5-flash` (production default). **Caching benchmark model (no longer served):** `anthropic/claude-haiku-4-5-20251001` (Anthropic `cache_control` via OpenRouter).
 
 **Cached prefix:** `build_system_prompt()` = default assistant + `SAFETY_POLICY_BLOCK` (~400+ tokens stable text). Enabled with `EXTENDED_SYSTEM_PROMPT=true` and `ENABLE_PROMPT_CACHE=true`.
 
