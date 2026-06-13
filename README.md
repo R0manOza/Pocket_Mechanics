@@ -2,6 +2,79 @@
 
 Capstone project (**CS-AI-2025 / Spring 2026**): a web app that helps **non-mechanic car owners** identify parts from **engine-bay photos** and get **safety-aware maintenance guidance** (multimodal AI + optional car profile).
 
+## Live demo
+
+| Surface | URL |
+|---------|-----|
+| **Frontend (Vercel)** | https://pocket-mechanics.vercel.app *(replace with current production URL)* |
+| **Backend API (Render)** | https://pocket-mechanics-api.onrender.com *(replace with current production URL; see `/docs` for OpenAPI)* |
+| **Health probe** | `GET <backend>/health` |
+
+> See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the step-by-step deployment runbook.
+
+## Features
+
+- **Photo → part ID** — multimodal Q&A over an uploaded engine-bay photo (≤ 5 MB, JPEG/PNG/HEIC).
+- **Streaming chat with memory** — SSE token streaming, session memory persisted across page reloads, multiple parallel chat sessions.
+- **Safety-aware guidance** — refusal/redirect for unsafe requests; explicit gate on hands-on repair steps (`RepairApprovalBanner`).
+- **Multi-vendor LLM routing** — OpenRouter (OpenAI, Anthropic, Llama, Gemma) with model fallback chain + direct Gemini path for dev.
+- **Prompt caching** — Anthropic `cache_control: ephemeral` on stable system prefix (see `docs/optimization-report.md`).
+- **MCP server** — `ask_pocket_mechanics_tip` stdio tool, bearer auth, Pydantic validation, JSONL audit log.
+- **Eval + telemetry** — 30-case golden set with LLM-as-judge, episode log with cost / cache / latency / fallback fields.
+
+## Tech stack
+
+| Layer | Stack |
+|-------|-------|
+| Frontend | Vite 8 · React 19.2 · TypeScript 6 · Tailwind CSS v4 · React Router v6 |
+| Backend | FastAPI (Python 3.12, `uv`) · Pydantic v2 · OpenAI SDK (OpenRouter) · `google-generativeai` |
+| LLM providers | OpenRouter (OpenAI, Anthropic, Gemini, Llama, Gemma) · direct Gemini |
+| MCP | stdio JSON-RPC · `modelcontextprotocol` SDK |
+| Hosting | Vercel (frontend) · Render (backend) · CI/CD via GitHub Actions |
+| Observability | CSV + JSONL episode log · MCP audit log · `scripts/metrics_report.py` |
+
+## Quick start (local)
+
+```bash
+# Backend
+cd Backend && cp .env.example .env  # fill in GEMINI_API_KEY and/or OPENROUTER_KEY
+uv sync && uv run uvicorn main:app --reload --port 8000
+
+# Frontend (new terminal)
+cd Frontend && npm install && npm run dev   # http://localhost:5173
+```
+
+## Security note — secret handling
+
+Early in the project a Gemini API key was accidentally committed to
+`Backend/.env.example` (commits `fed10fb`, `65425ab`) before being replaced with
+a placeholder on `184fe7a`. The exposed key was **revoked**: Google's automated
+secret scanning detected the public key and disabled it, and we have since
+confirmed it is dead and replaced it with a new key that lives only in
+environment variables (`Backend/.env`, gitignored, and the deploy host's env).
+
+We chose **not** to rewrite git history, because the leaked key is already
+invalidated and rewriting would change every commit SHA — including
+`7456456`, the SHA submitted for the Safety & Evaluation Audit. All current
+secrets are kept out of version control: `.env*` is gitignored and
+`.env.example` contains placeholders only.
+
+## Screenshots
+
+Screenshots live in [`docs/screenshots/`](docs/screenshots/) — landing page, chat with attached image, sessions sidebar, analyze page result card.
+
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System diagram + data flow |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Step-by-step Vercel + Render deployment |
+| [`docs/CASE_STUDY.md`](docs/CASE_STUDY.md) | Problem, design, AI implementation, results |
+| [`docs/safety-audit.md`](docs/safety-audit.md) | Capstone Week 11 — six evidence areas |
+| [`docs/optimization-report.md`](docs/optimization-report.md) | Lab 8 — caching + fallback benchmark |
+
+---
+
 ## Repo layout
 
 | Path | Purpose |
