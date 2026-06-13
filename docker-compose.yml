@@ -1,0 +1,25 @@
+# One-command local run of the Pocket Mechanics backend.
+#
+#   cp Backend/.env.example Backend/.env   # set GEMINI_API_KEY and/or OPENROUTER_KEY
+#   docker compose up --build
+#
+# Backend is then live at http://localhost:8000 (docs at /docs, health at /health).
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pocket-mechanics
+    container_name: pocket-mechanics-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - Backend/.env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3

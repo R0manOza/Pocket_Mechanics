@@ -192,7 +192,7 @@ Fallback: clearer photo prompt + **Try Again**; low confidence → amber banner 
 
 Complete before **Thursday 2 April 2026 23:59** (Georgia time).
 
-- [x] All sections above have no `[fill in]` placeholders left (confirm Firebase region once the project is created).  
+- [x] All sections above are complete — no unfilled placeholders remain.  
 - [x] Architecture diagram committed and readable: [`architecture-diagram.svg`](./architecture-diagram.svg); if the course requires **`docs/design-review/architecture-diagram.png`**, export from SVG and add that path.  
 - [x] `TEAM-CONTRACT.md` in repo root with all member names in Signatures.  
 - [x] `.env` is **not** committed (verify [`.gitignore`](../.gitignore)).  

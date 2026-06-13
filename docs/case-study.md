@@ -82,9 +82,9 @@ We built a web app with two interaction modes:
 | Error rate in logged calls | **~2%** (3 / 151) | `Backend/logs/episode-log.csv` |
 | Multi-provider fallback fired & recovered | **3×** | episode log (`fallback_triggered=true`) |
 | Committed evaluation runs | **18** | `eval/results/` |
-| Load test (50 users / 2 min) — p50 / p95 / p99 | _<fill in from `load/load-test-report.md`>_ | locust run |
+| Load test (50 users / 2 min) | **2,764 reqs, 0 failures**; `/health` p99 30 ms | `load/load-test-report.md` |
 
-**Live app:** _<fill in Vercel URL>_ · **Demo video:** _<fill in link>_
+**Live app:** https://pocket-mechanics.vercel.app/ · **Launch video (60s):** https://drive.google.com/file/d/1tD41XDU9zPSjwKwZX26MW1_V0zaScEvj/view?usp=drive_link · **Slides:** https://docs.google.com/presentation/d/1cBYYpPlSj6ee7Sv_kr2Mx4K6kHs5vqKN/edit · **2-min demo video:** _<fill in once recorded>_
 
 Notable: the fallback chain isn't theoretical — it fired and recovered three
 times in our logs, and the user got an answer every time. The latency is honest:
