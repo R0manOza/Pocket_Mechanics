@@ -7,13 +7,14 @@ import json
 import os
 import time
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, model_validator
 
 from agent.state import STEP_RESPOND, initial_state_from_session
 from services import llm_service, resilience, vision_utils
 from services.episode_logger import log_error, log_stream_end, log_user_message
+from services.rate_limit import rate_limit
 from services.session_service import load_session, save_session
 
 router = APIRouter()
@@ -263,7 +264,7 @@ async def _token_generator(
         yield "data: [DONE]\n\n"
 
 
-@router.post("/ai/stream")
+@router.post("/ai/stream", dependencies=[Depends(rate_limit)])
 async def stream_chat(body: StreamRequest):
     try:
         validated_images = vision_utils.validate_image_data_urls(body.images)
