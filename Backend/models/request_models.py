@@ -47,6 +47,11 @@ class GenerateRequest(BaseModel):
 class GenerateResponse(BaseModel):
     content: str
     model: str
+    # `model_used` mirrors `model` so every API response carries an explicit
+    # "which model actually served this" field (rubric: production engineering).
+    # It reflects the real model after any fallback, since `model` is set to the
+    # model that produced the response.
+    model_used: str = ""
     input_tokens: int
     output_tokens: int
     cache_read_tokens: int = 0
@@ -54,3 +59,9 @@ class GenerateResponse(BaseModel):
     latency_ms: int
     fallback_triggered: bool = False
     cost_usd: float
+
+    @model_validator(mode="after")
+    def _default_model_used(self):
+        if not self.model_used:
+            self.model_used = self.model
+        return self

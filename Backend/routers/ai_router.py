@@ -1,10 +1,15 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from models.request_models import GenerateRequest, GenerateResponse
 from services import llm_service
+from services.rate_limit import rate_limit
 
 router = APIRouter()
 
-@router.post("/ai/generate", response_model=GenerateResponse)
+@router.post(
+    "/ai/generate",
+    response_model=GenerateResponse,
+    dependencies=[Depends(rate_limit)],
+)
 def generate(body: GenerateRequest):
     """
     Lab 5 blocking endpoint: prompt (optional if images) -> Gemini or OpenRouter -> JSON + cost log.
