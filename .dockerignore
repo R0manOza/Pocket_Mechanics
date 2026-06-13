@@ -1,0 +1,18 @@
+# Keep the build context small and never ship secrets or local cruft.
+**/.env
+**/.env.*
+!**/.env.example
+**/__pycache__/
+**/*.pyc
+.venv/
+**/.venv/
+.git/
+.github/
+Frontend/
+node_modules/
+**/node_modules/
+docs/
+eval/results/
+*.md
+.coverage
+.pytest_cache/

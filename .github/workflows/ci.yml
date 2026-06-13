@@ -1,0 +1,48 @@
+name: CI
+
+# Lightweight test + evaluation gate, separate from the deploy pipeline (ci-cd.yml).
+# Runs on every push/PR to main so the badge reflects the latest committed state.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-and-eval:
+    name: Backend tests + golden-set gate
+    runs-on: ubuntu-latest
+
+    env:
+      # Key lives in GitHub Secrets, never hardcoded. The golden gate below runs in
+      # --offline-judge mode so CI is deterministic and needs no live key; the secret
+      # is wired here so a real LLM-judged run can be enabled by dropping the flags.
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      POCKET_MECHANICS_UNDER_TEST: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend dependencies
+        working-directory: Backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+          pip install pytest pytest-asyncio httpx
+
+      - name: Run backend tests
+        working-directory: Backend
+        run: pytest ../tests -q
+
+      - name: Golden-set gate (0.70 threshold)
+        # run_golden_set.py exits non-zero if fewer than 7/10 pass — this fails CI.
+        # --mock --offline-judge: deterministic, no backend or API key required.
+        run: python eval/run_golden_set.py --mock --offline-judge
