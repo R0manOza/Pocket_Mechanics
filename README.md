@@ -8,7 +8,7 @@ Capstone project (**CS-AI-2025 / Spring 2026**): a web app that helps **non-mech
 |---------|-----|
 | **Frontend (live)** | https://pocket-mechanics.vercel.app/ |
 | **Backend API (Render)** | https://pocket-mechanics.onrender.com/ (`/docs` for OpenAPI, `/health` for liveness) |
-| **2-min demo video** | _<fill in link once recorded>_ |
+| **2-min demo video** | https://drive.google.com/file/d/1feQyDSrqFqiTfF_F_NPPxPGjsy-2ithq/view?usp=sharing |
 | **60-sec launch video** | https://drive.google.com/file/d/1tD41XDU9zPSjwKwZX26MW1_V0zaScEvj/view?usp=drive_link |
 | **Presentation** | https://docs.google.com/presentation/d/1cBYYpPlSj6ee7Sv_kr2Mx4K6kHs5vqKN/edit?usp=drive_link |
 

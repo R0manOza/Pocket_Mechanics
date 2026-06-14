@@ -4,8 +4,7 @@
 **Course:** Building AI-Powered Applications · CS-AI-2025 · Spring 2026 · KIU
 
 > A 2–3 page account of what we built, why, how, what the numbers say, and what
-> we learned. Some specifics (exact deploy URL, video link, final load numbers)
-> are marked _<fill in>_ for the team to complete.
+> we learned.
 
 ---
 
@@ -84,7 +83,7 @@ We built a web app with two interaction modes:
 | Committed evaluation runs | **18** | `eval/results/` |
 | Load test (50 users / 2 min) | **2,764 reqs, 0 failures**; `/health` p99 30 ms | `load/load-test-report.md` |
 
-**Live app:** https://pocket-mechanics.vercel.app/ · **Launch video (60s):** https://drive.google.com/file/d/1tD41XDU9zPSjwKwZX26MW1_V0zaScEvj/view?usp=drive_link · **Slides:** https://docs.google.com/presentation/d/1cBYYpPlSj6ee7Sv_kr2Mx4K6kHs5vqKN/edit · **2-min demo video:** _<fill in once recorded>_
+**Live app:** https://pocket-mechanics.vercel.app/ · **Launch video (60s):** https://drive.google.com/file/d/1tD41XDU9zPSjwKwZX26MW1_V0zaScEvj/view?usp=drive_link · **Slides:** https://docs.google.com/presentation/d/1cBYYpPlSj6ee7Sv_kr2Mx4K6kHs5vqKN/edit · **2-min demo video:** https://drive.google.com/file/d/1feQyDSrqFqiTfF_F_NPPxPGjsy-2ithq/view?usp=sharing
 
 Notable: the fallback chain isn't theoretical — it fired and recovered three
 times in our logs, and the user got an answer every time. The latency is honest:
