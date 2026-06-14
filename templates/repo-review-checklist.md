@@ -46,7 +46,7 @@
 
 | Item | Status | Note |
 |------|--------|------|
-| 2-min narrated demo video in README | ⬜ | ⚠️ **Record + link** — only remaining repo gap. |
+| 2-min narrated demo video in README | ✅ | Recorded (~2:00), linked in README + case-study, shared "anyone with link". |
 | 60-sec launch video | ✅ | Recorded, linked in README, shared "anyone with link". |
 | 8-slide deck rehearsed, fits 10 min | ✅ | Slides linked; rehearse before 16:00. |
 
@@ -75,12 +75,13 @@
 | `logs/episode-log.jsonl` 100+ entries, zero PII | ✅ | 139 entries at root path; `model_used` + `fallback_triggered` present; no PII. |
 | `mcp-server/` auth + validation + sanitized errors | ✅ | Area 3 scored 2/2 in Week 11 audit. |
 | Live deployment (frontend + backend) | ✅ | Frontend https://pocket-mechanics.vercel.app/ · Backend https://pocket-mechanics.onrender.com/health → 200. |
-| 4 lab tags pushed | ⬜ | `lab7`/`lab8` pushed; ⚠️ add `lab9-hardening`, `lab10-production`, `lab11-portability`, `lab12-demo-day` at the final commit. |
+| 4 lab tags pushed | ✅ | `lab9-hardening`, `lab10-production`, `lab11-portability`, `lab12-demo-day` all pushed at the final main commit (plus `lab7`/`lab8`). |
 | Commits spread across semester per member | ✅ | Git history spans the term. |
 
-## Remaining actions before freeze
+## Status
 
-1. ⚠️ **Record the 2-min narrated demo video**; link in README + case-study (the only repo content gap).
-2. ⚠️ **Push the 4 lab tags** (`lab9`/`lab10`/`lab11`/`lab12`) at the final commit.
-3. ⚠️ **Rebuild the deployed backend** so the model picker (3 working models), rate limiter, and `model_used` changes are live for the demo.
-4. ⚠️ Rehearse the deck within the 10-minute slot.
+All repository deliverables are complete and on `main`; all 6 lab tags are pushed.
+
+Remaining items are operational (Demo Day), not repository content:
+1. ⚠️ **Rebuild/redeploy the backend** so the model picker (3 working models), rate limiter, and `model_used` changes are live for the demo.
+2. ⚠️ Rehearse the deck within the 10-minute slot.
